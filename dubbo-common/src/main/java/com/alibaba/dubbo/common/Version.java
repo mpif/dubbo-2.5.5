@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,39 +23,94 @@ import com.alibaba.dubbo.common.utils.ClassHelper;
 import java.net.URL;
 import java.security.CodeSource;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * Version
- *
- * @author william.liangf
  */
 public final class Version {
-
     private static final Logger logger = LoggerFactory.getLogger(Version.class);
-    private static final String VERSION = getVersion(Version.class, "2.0.0");
-    private static final boolean INTERNAL = hasResource("com/alibaba/dubbo/registry/internal/RemoteRegistry.class");
-    private static final boolean COMPATIBLE = hasResource("com/taobao/remoting/impl/ConnectionRequest.class");
+
+    // Dubbo RPC protocol version, for compatibility, it must not be between 2.0.10 ~ 2.6.2
+    public static final String DEFAULT_DUBBO_PROTOCOL_VERSION = "2.0.2";
+    // Dubbo implementation version, usually is jar version.
+    private static final String VERSION = getVersion(Version.class, "");
+
+    /**
+     * For protocol compatibility purpose.
+     * Because {@link #isSupportResponseAttatchment} is checked for every call, int compare expect to has higher performance than string.
+     */
+    private static final int LOWEST_VERSION_FOR_RESPONSE_ATTATCHMENT = 20002; // 2.0.2
+    private static final Map<String, Integer> VERSION2INT = new HashMap<String, Integer>();
 
     static {
-        // 检查是否存在重复的jar包
+        // check if there's duplicated jar
         Version.checkDuplicate(Version.class);
     }
 
     private Version() {
     }
 
+    public static String getProtocolVersion() {
+        return DEFAULT_DUBBO_PROTOCOL_VERSION;
+    }
+
     public static String getVersion() {
         return VERSION;
     }
 
-    public static boolean isInternalVersion() {
-        return INTERNAL;
+    public static boolean isSupportResponseAttatchment(String version) {
+        if (version == null || version.length() == 0) {
+            return false;
+        }
+        // for previous dubbo version(2.0.10/020010~2.6.2/020602), this version is the jar's version, so they need to be ignore
+        int iVersion = getIntVersion(version);
+        if (iVersion >= 20010 && iVersion <= 20602) {
+            return false;
+        }
+
+        return iVersion >= LOWEST_VERSION_FOR_RESPONSE_ATTATCHMENT;
     }
 
-    public static boolean isCompatibleVersion() {
-        return COMPATIBLE;
+    public static int getIntVersion(String version) {
+        Integer v = VERSION2INT.get(version);
+        if (v == null) {
+            v = parseInt(version);
+            VERSION2INT.put(version, v);
+        }
+        return v;
+    }
+
+    private static int parseInt(String version) {
+        int v = 0;
+        String[] vArr = version.split("\\.");
+        int len = vArr.length;
+        for (int i = 0; i < len; i++) {
+            v += Integer.parseInt(getDigital(vArr[i])) * Math.pow(10, (len - i - 1) * 2);
+        }
+        return v;
+    }
+
+    private static String getDigital(String v) {
+        int index = 0;
+        for (int i = 0; i < v.length(); i++) {
+            char c = v.charAt(i);
+            if (Character.isDigit(c)) {
+                if (i == v.length() - 1) {
+                    index = i + 1;
+                } else {
+                    index = i;
+                }
+                continue;
+            } else {
+                index = i;
+                break;
+            }
+        }
+        return v.substring(0, index);
     }
 
     private static boolean hasResource(String path) {
@@ -67,13 +123,13 @@ public final class Version {
 
     public static String getVersion(Class<?> cls, String defaultVersion) {
         try {
-            // 首先查找MANIFEST.MF规范中的版本号
+            // find version info from MANIFEST.MF first
             String version = cls.getPackage().getImplementationVersion();
             if (version == null || version.length() == 0) {
                 version = cls.getPackage().getSpecificationVersion();
             }
             if (version == null || version.length() == 0) {
-                // 如果规范中没有版本号，基于jar包名获取版本号
+                // guess version fro jar file name if nothing's found from MANIFEST.MF
                 CodeSource codeSource = cls.getProtectionDomain().getCodeSource();
                 if (codeSource == null) {
                     logger.info("No codeSource for class " + cls.getName() + " when getVersion, use default version " + defaultVersion);
@@ -101,10 +157,10 @@ public final class Version {
                     }
                 }
             }
-            // 返回版本号，如果为空返回缺省版本号
+            // return default version if no version info is found
             return version == null || version.length() == 0 ? defaultVersion : version;
-        } catch (Throwable e) { // 防御性容错
-            // 忽略异常，返回缺省版本号
+        } catch (Throwable e) {
+            // return default version when any exception is thrown
             logger.error("return default version, ignore exception " + e.getMessage(), e);
             return defaultVersion;
         }
@@ -120,7 +176,7 @@ public final class Version {
 
     public static void checkDuplicate(String path, boolean failOnError) {
         try {
-            // 在ClassPath搜文件
+            // search in caller's classloader
             Enumeration<URL> urls = ClassHelper.getCallerClassLoader(Version.class).getResources(path);
             Set<String> files = new HashSet<String>();
             while (urls.hasMoreElements()) {
@@ -132,7 +188,7 @@ public final class Version {
                     }
                 }
             }
-            // 如果有多个，就表示重复
+            // duplicated jar is found
             if (files.size() > 1) {
                 String error = "Duplicate class " + path + " in " + files.size() + " jar " + files;
                 if (failOnError) {
@@ -141,7 +197,7 @@ public final class Version {
                     logger.error(error);
                 }
             }
-        } catch (Throwable e) { // 防御性容错
+        } catch (Throwable e) {
             logger.error(e.getMessage(), e);
         }
     }

@@ -1,11 +1,12 @@
 /*
- * Copyright 1999-2012 Alibaba Group.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,6 +22,7 @@ import com.alibaba.dubbo.common.extension.ExtensionLoader;
 import com.alibaba.dubbo.common.serialize.ObjectInput;
 import com.alibaba.dubbo.common.serialize.ObjectOutput;
 import com.alibaba.dubbo.common.serialize.Serialization;
+import com.alibaba.dubbo.common.utils.StringUtils;
 import com.alibaba.dubbo.rpc.Exporter;
 import com.alibaba.dubbo.rpc.Invocation;
 import com.alibaba.dubbo.rpc.Invoker;
@@ -46,17 +48,17 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * RedisProtocol
- *
- * @author william.liangf
  */
 public class RedisProtocol extends AbstractProtocol {
 
     public static final int DEFAULT_PORT = 6379;
 
+    @Override
     public int getDefaultPort() {
         return DEFAULT_PORT;
     }
 
+    @Override
     public <T> Exporter<T> export(final Invoker<T> invoker) throws RpcException {
         throw new UnsupportedOperationException("Unsupported export redis service. url: " + invoker.getUrl());
     }
@@ -65,6 +67,7 @@ public class RedisProtocol extends AbstractProtocol {
         return ExtensionLoader.getExtensionLoader(Serialization.class).getExtension(url.getParameter(Constants.SERIALIZATION_KEY, "java"));
     }
 
+    @Override
     public <T> Invoker<T> refer(final Class<T> type, final URL url) throws RpcException {
         try {
             GenericObjectPoolConfig config = new GenericObjectPoolConfig();
@@ -88,12 +91,15 @@ public class RedisProtocol extends AbstractProtocol {
             if (url.getParameter("min.evictable.idle.time.millis", 0) > 0)
                 config.setMinEvictableIdleTimeMillis(url.getParameter("min.evictable.idle.time.millis", 0));
             final JedisPool jedisPool = new JedisPool(config, url.getHost(), url.getPort(DEFAULT_PORT),
-                    url.getParameter(Constants.TIMEOUT_KEY, Constants.DEFAULT_TIMEOUT));
+                    url.getParameter(Constants.TIMEOUT_KEY, Constants.DEFAULT_TIMEOUT),
+                    StringUtils.isBlank(url.getPassword()) ? null : url.getPassword(),
+                    url.getParameter("db.index", 0));
             final int expiry = url.getParameter("expiry", 0);
             final String get = url.getParameter("get", "get");
             final String set = url.getParameter("set", Map.class.equals(type) ? "put" : "set");
             final String delete = url.getParameter("delete", Map.class.equals(type) ? "remove" : "delete");
             return new AbstractInvoker<T>(type, url) {
+                @Override
                 protected Result doInvoke(Invocation invocation) throws Throwable {
                     Jedis resource = null;
                     try {
@@ -152,6 +158,7 @@ public class RedisProtocol extends AbstractProtocol {
                     }
                 }
 
+                @Override
                 public void destroy() {
                     super.destroy();
                     try {

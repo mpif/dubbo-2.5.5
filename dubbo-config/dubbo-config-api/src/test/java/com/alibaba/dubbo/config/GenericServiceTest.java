@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2012 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,8 +43,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * GenericServiceTest
- *
- * @author william.liangf
  */
 public class GenericServiceTest {
 
@@ -75,7 +74,7 @@ public class GenericServiceTest {
             ReferenceConfig<DemoService> reference = new ReferenceConfig<DemoService>();
             reference.setApplication(new ApplicationConfig("generic-consumer"));
             reference.setInterface(DemoService.class);
-            reference.setUrl("dubbo://127.0.0.1:29581?generic=true");
+            reference.setUrl("dubbo://127.0.0.1:29581?generic=true&timeout=3000");
             DemoService demoService = reference.get();
             try {
                 // say name
@@ -114,7 +113,7 @@ public class GenericServiceTest {
             ReferenceConfig<GenericService> reference = new ReferenceConfig<GenericService>();
             reference.setApplication(new ApplicationConfig("generic-consumer"));
             reference.setInterface(DemoService.class);
-            reference.setUrl("dubbo://127.0.0.1:29581?scope=remote");
+            reference.setUrl("dubbo://127.0.0.1:29581?scope=remote&timeout=3000");
             reference.setGeneric(true);
             GenericService genericService = reference.get();
             try {
@@ -148,7 +147,7 @@ public class GenericServiceTest {
             ReferenceConfig<GenericService> reference = new ReferenceConfig<GenericService>();
             reference.setApplication(new ApplicationConfig("generic-consumer"));
             reference.setInterface(DemoService.class);
-            reference.setUrl("dubbo://127.0.0.1:29581?scope=remote");
+            reference.setUrl("dubbo://127.0.0.1:29581?scope=remote&timeout=3000");
             reference.setGeneric(Constants.GENERIC_SERIALIZATION_NATIVE_JAVA);
             GenericService genericService = reference.get();
             try {
@@ -217,7 +216,7 @@ public class GenericServiceTest {
             reference = new ReferenceConfig<GenericService>();
             reference.setApplication(new ApplicationConfig("bean-consumer"));
             reference.setInterface(DemoService.class);
-            reference.setUrl("dubbo://127.0.0.1:29581?scope=remote");
+            reference.setUrl("dubbo://127.0.0.1:29581?scope=remote&timeout=3000");
             reference.setGeneric(Constants.GENERIC_SERIALIZATION_BEAN);
             GenericService genericService = reference.get();
             User user = new User();
@@ -271,7 +270,7 @@ public class GenericServiceTest {
             ref = new ReferenceConfig<DemoService>();
             ref.setApplication(new ApplicationConfig("bean-consumer"));
             ref.setInterface(DemoService.class);
-            ref.setUrl("dubbo://127.0.0.1:29581?scope=remote&generic=bean");
+            ref.setUrl("dubbo://127.0.0.1:29581?scope=remote&generic=bean&timeout=3000");
             DemoService demoService = ref.get();
             User user = new User();
             user.setName("zhangsan");

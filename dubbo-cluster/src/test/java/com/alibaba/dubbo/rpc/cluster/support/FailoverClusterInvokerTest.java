@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,7 +27,6 @@ import com.alibaba.dubbo.rpc.cluster.Directory;
 import com.alibaba.dubbo.rpc.cluster.directory.StaticDirectory;
 import com.alibaba.dubbo.rpc.protocol.AbstractInvoker;
 
-import org.easymock.EasyMock;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -39,22 +39,23 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 /**
  * FailoverClusterInvokerTest
  *
- * @author liuchao
  */
 @SuppressWarnings("unchecked")
 public class FailoverClusterInvokerTest {
-    List<Invoker<FailoverClusterInvokerTest>> invokers = new ArrayList<Invoker<FailoverClusterInvokerTest>>();
-    int retries = 5;
-    URL url = URL.valueOf("test://test:11/test?retries=" + retries);
-    Invoker<FailoverClusterInvokerTest> invoker1 = EasyMock.createMock(Invoker.class);
-    Invoker<FailoverClusterInvokerTest> invoker2 = EasyMock.createMock(Invoker.class);
-    RpcInvocation invocation = new RpcInvocation();
-    Directory<FailoverClusterInvokerTest> dic;
-    Result result = new RpcResult();
+    private List<Invoker<FailoverClusterInvokerTest>> invokers = new ArrayList<Invoker<FailoverClusterInvokerTest>>();
+    private int retries = 5;
+    private URL url = URL.valueOf("test://test:11/test?retries=" + retries);
+    private Invoker<FailoverClusterInvokerTest> invoker1 = mock(Invoker.class);
+    private Invoker<FailoverClusterInvokerTest> invoker2 = mock(Invoker.class);
+    private RpcInvocation invocation = new RpcInvocation();
+    private Directory<FailoverClusterInvokerTest> dic;
+    private Result result = new RpcResult();
 
     /**
      * @throws java.lang.Exception
@@ -63,13 +64,12 @@ public class FailoverClusterInvokerTest {
     @Before
     public void setUp() throws Exception {
 
-        dic = EasyMock.createMock(Directory.class);
+        dic = mock(Directory.class);
 
-        EasyMock.expect(dic.getUrl()).andReturn(url).anyTimes();
-        EasyMock.expect(dic.list(invocation)).andReturn(invokers).anyTimes();
-        EasyMock.expect(dic.getInterface()).andReturn(FailoverClusterInvokerTest.class).anyTimes();
+        given(dic.getUrl()).willReturn(url);
+        given(dic.list(invocation)).willReturn(invokers);
+        given(dic.getInterface()).willReturn(FailoverClusterInvokerTest.class);
         invocation.setMethodName("method1");
-        EasyMock.replay(dic);
 
         invokers.add(invoker1);
         invokers.add(invoker2);
@@ -78,19 +78,15 @@ public class FailoverClusterInvokerTest {
 
     @Test
     public void testInvokeWithRuntimeException() {
-        EasyMock.reset(invoker1);
-        EasyMock.expect(invoker1.invoke(invocation)).andThrow(new RuntimeException()).anyTimes();
-        EasyMock.expect(invoker1.isAvailable()).andReturn(true).anyTimes();
-        EasyMock.expect(invoker1.getUrl()).andReturn(url).anyTimes();
-        EasyMock.expect(invoker1.getInterface()).andReturn(FailoverClusterInvokerTest.class).anyTimes();
-        EasyMock.replay(invoker1);
+        given(invoker1.invoke(invocation)).willThrow(new RuntimeException());
+        given(invoker1.isAvailable()).willReturn(true);
+        given(invoker1.getUrl()).willReturn(url);
+        given(invoker1.getInterface()).willReturn(FailoverClusterInvokerTest.class);
 
-        EasyMock.reset(invoker2);
-        EasyMock.expect(invoker2.invoke(invocation)).andThrow(new RuntimeException()).anyTimes();
-        EasyMock.expect(invoker2.isAvailable()).andReturn(true).anyTimes();
-        EasyMock.expect(invoker2.getUrl()).andReturn(url).anyTimes();
-        EasyMock.expect(invoker2.getInterface()).andReturn(FailoverClusterInvokerTest.class).anyTimes();
-        EasyMock.replay(invoker2);
+        given(invoker2.invoke(invocation)).willThrow(new RuntimeException());
+        given(invoker2.isAvailable()).willReturn(true);
+        given(invoker2.getUrl()).willReturn(url);
+        given(invoker2.getInterface()).willReturn(FailoverClusterInvokerTest.class);
 
         FailoverClusterInvoker<FailoverClusterInvokerTest> invoker = new FailoverClusterInvoker<FailoverClusterInvokerTest>(dic);
         try {
@@ -104,20 +100,15 @@ public class FailoverClusterInvokerTest {
 
     @Test()
     public void testInvokeWithRPCException() {
+        given(invoker1.invoke(invocation)).willThrow(new RpcException());
+        given(invoker1.isAvailable()).willReturn(true);
+        given(invoker1.getUrl()).willReturn(url);
+        given(invoker1.getInterface()).willReturn(FailoverClusterInvokerTest.class);
 
-        EasyMock.reset(invoker1);
-        EasyMock.expect(invoker1.invoke(invocation)).andThrow(new RpcException()).anyTimes();
-        EasyMock.expect(invoker1.isAvailable()).andReturn(true).anyTimes();
-        EasyMock.expect(invoker1.getUrl()).andReturn(url).anyTimes();
-        EasyMock.expect(invoker1.getInterface()).andReturn(FailoverClusterInvokerTest.class).anyTimes();
-        EasyMock.replay(invoker1);
-
-        EasyMock.reset(invoker2);
-        EasyMock.expect(invoker2.invoke(invocation)).andReturn(result).anyTimes();
-        EasyMock.expect(invoker2.isAvailable()).andReturn(true).anyTimes();
-        EasyMock.expect(invoker2.getUrl()).andReturn(url).anyTimes();
-        EasyMock.expect(invoker2.getInterface()).andReturn(FailoverClusterInvokerTest.class).anyTimes();
-        EasyMock.replay(invoker2);
+        given(invoker2.invoke(invocation)).willReturn(result);
+        given(invoker2.isAvailable()).willReturn(true);
+        given(invoker2.getUrl()).willReturn(url);
+        given(invoker2.getInterface()).willReturn(FailoverClusterInvokerTest.class);
 
         FailoverClusterInvoker<FailoverClusterInvokerTest> invoker = new FailoverClusterInvoker<FailoverClusterInvokerTest>(dic);
         for (int i = 0; i < 100; i++) {
@@ -128,20 +119,15 @@ public class FailoverClusterInvokerTest {
 
     @Test()
     public void testInvoke_retryTimes() {
+        given(invoker1.invoke(invocation)).willThrow(new RpcException(RpcException.TIMEOUT_EXCEPTION));
+        given(invoker1.isAvailable()).willReturn(false);
+        given(invoker1.getUrl()).willReturn(url);
+        given(invoker1.getInterface()).willReturn(FailoverClusterInvokerTest.class);
 
-        EasyMock.reset(invoker1);
-        EasyMock.expect(invoker1.invoke(invocation)).andThrow(new RpcException(RpcException.TIMEOUT_EXCEPTION)).anyTimes();
-        EasyMock.expect(invoker1.isAvailable()).andReturn(false).anyTimes();
-        EasyMock.expect(invoker1.getUrl()).andReturn(url).anyTimes();
-        EasyMock.expect(invoker1.getInterface()).andReturn(FailoverClusterInvokerTest.class).anyTimes();
-        EasyMock.replay(invoker1);
-
-        EasyMock.reset(invoker2);
-        EasyMock.expect(invoker2.invoke(invocation)).andThrow(new RpcException()).anyTimes();
-        EasyMock.expect(invoker2.isAvailable()).andReturn(false).anyTimes();
-        EasyMock.expect(invoker2.getUrl()).andReturn(url).anyTimes();
-        EasyMock.expect(invoker2.getInterface()).andReturn(FailoverClusterInvokerTest.class).anyTimes();
-        EasyMock.replay(invoker2);
+        given(invoker2.invoke(invocation)).willThrow(new RpcException());
+        given(invoker2.isAvailable()).willReturn(false);
+        given(invoker2.getUrl()).willReturn(url);
+        given(invoker2.getInterface()).willReturn(FailoverClusterInvokerTest.class);
 
         FailoverClusterInvoker<FailoverClusterInvokerTest> invoker = new FailoverClusterInvoker<FailoverClusterInvokerTest>(dic);
         try {
@@ -149,20 +135,19 @@ public class FailoverClusterInvokerTest {
             assertSame(result, ret);
             fail();
         } catch (RpcException expected) {
-            assertTrue(expected.isTimeout());
+            assertTrue((expected.isTimeout() || expected.getCode() == 0));
             assertTrue(expected.getMessage().indexOf((retries + 1) + " times") > 0);
         }
     }
 
     @Test()
     public void testNoInvoke() {
-        dic = EasyMock.createMock(Directory.class);
+        dic = mock(Directory.class);
 
-        EasyMock.expect(dic.getUrl()).andReturn(url).anyTimes();
-        EasyMock.expect(dic.list(invocation)).andReturn(null).anyTimes();
-        EasyMock.expect(dic.getInterface()).andReturn(FailoverClusterInvokerTest.class).anyTimes();
+        given(dic.getUrl()).willReturn(url);
+        given(dic.list(invocation)).willReturn(null);
+        given(dic.getInterface()).willReturn(FailoverClusterInvokerTest.class);
         invocation.setMethodName("method1");
-        EasyMock.replay(dic);
 
         invokers.add(invoker1);
 
@@ -177,10 +162,11 @@ public class FailoverClusterInvokerTest {
     }
 
     /**
-     * 测试在调用重试过程中，directory列表变更，invoke重试时重新进行list选择
+     * When invokers in directory changes after a failed request but just before a retry effort,
+     * then we should reselect from the latest invokers before retry.
      */
     @Test
-    public void testInvokerDestoryAndReList() {
+    public void testInvokerDestroyAndReList() {
         final URL url = URL.valueOf("test://localhost/" + Demo.class.getName() + "?loadbalance=roundrobin&retries=" + retries);
         RpcException exception = new RpcException(RpcException.TIMEOUT_EXCEPTION);
         MockInvoker<Demo> invoker1 = new MockInvoker<Demo>(Demo.class, url);
@@ -195,7 +181,7 @@ public class FailoverClusterInvokerTest {
 
         Callable<Object> callable = new Callable<Object>() {
             public Object call() throws Exception {
-                //模拟invoker全部被destroy掉
+                //Simulation: all invokers are destroyed
                 for (Invoker<Demo> invoker : invokers) {
                     invoker.destroy();
                 }

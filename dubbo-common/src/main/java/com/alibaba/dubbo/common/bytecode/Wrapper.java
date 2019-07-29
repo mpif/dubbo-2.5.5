@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,43 +34,48 @@ import java.util.regex.Matcher;
 
 /**
  * Wrapper.
- *
- * @author qian.lei
  */
-
 public abstract class Wrapper {
     private static final Map<Class<?>, Wrapper> WRAPPER_MAP = new ConcurrentHashMap<Class<?>, Wrapper>(); //class wrapper map
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     private static final String[] OBJECT_METHODS = new String[]{"getClass", "hashCode", "toString", "equals"};
     private static final Wrapper OBJECT_WRAPPER = new Wrapper() {
+        @Override
         public String[] getMethodNames() {
             return OBJECT_METHODS;
         }
 
+        @Override
         public String[] getDeclaredMethodNames() {
             return OBJECT_METHODS;
         }
 
+        @Override
         public String[] getPropertyNames() {
             return EMPTY_STRING_ARRAY;
         }
 
+        @Override
         public Class<?> getPropertyType(String pn) {
             return null;
         }
 
+        @Override
         public Object getPropertyValue(Object instance, String pn) throws NoSuchPropertyException {
             throw new NoSuchPropertyException("Property [" + pn + "] not found.");
         }
 
+        @Override
         public void setPropertyValue(Object instance, String pn, Object pv) throws NoSuchPropertyException {
             throw new NoSuchPropertyException("Property [" + pn + "] not found.");
         }
 
+        @Override
         public boolean hasProperty(String name) {
             return false;
         }
 
+        @Override
         public Object invokeMethod(Object instance, String mn, Class<?>[] types, Object[] args) throws NoSuchMethodException {
             if ("getClass".equals(mn)) return instance.getClass();
             if ("hashCode".equals(mn)) return instance.hashCode();

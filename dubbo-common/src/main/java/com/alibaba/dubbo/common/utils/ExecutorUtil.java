@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,9 +27,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-/**
- * @author chao.liuc
- */
 public class ExecutorUtil {
     private static final Logger logger = LoggerFactory.getLogger(ExecutorUtil.class);
     private static final ThreadPoolExecutor shutdownExecutor = new ThreadPoolExecutor(0, 1,
@@ -36,28 +34,36 @@ public class ExecutorUtil {
             new LinkedBlockingQueue<Runnable>(100),
             new NamedThreadFactory("Close-ExecutorService-Timer", true));
 
-    public static boolean isShutdown(Executor executor) {
+    public static boolean isTerminated(Executor executor) {
         if (executor instanceof ExecutorService) {
-            if (((ExecutorService) executor).isShutdown()) {
+            if (((ExecutorService) executor).isTerminated()) {
                 return true;
             }
         }
         return false;
     }
 
+    /**
+     * Use the shutdown pattern from:
+     *  https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ExecutorService.html
+     * @param executor the Executor to shutdown
+     * @param timeout the timeout in milliseconds before termination
+     */
     public static void gracefulShutdown(Executor executor, int timeout) {
-        if (!(executor instanceof ExecutorService) || isShutdown(executor)) {
+        if (!(executor instanceof ExecutorService) || isTerminated(executor)) {
             return;
         }
         final ExecutorService es = (ExecutorService) executor;
         try {
-            es.shutdown(); // Disable new tasks from being submitted
+            // Disable new tasks from being submitted
+            es.shutdown();
         } catch (SecurityException ex2) {
             return;
         } catch (NullPointerException ex2) {
             return;
         }
         try {
+            // Wait a while for existing tasks to terminate
             if (!es.awaitTermination(timeout, TimeUnit.MILLISECONDS)) {
                 es.shutdownNow();
             }
@@ -65,13 +71,13 @@ public class ExecutorUtil {
             es.shutdownNow();
             Thread.currentThread().interrupt();
         }
-        if (!isShutdown(es)) {
+        if (!isTerminated(es)) {
             newThreadToCloseExecutor(es);
         }
     }
 
     public static void shutdownNow(Executor executor, final int timeout) {
-        if (!(executor instanceof ExecutorService) || isShutdown(executor)) {
+        if (!(executor instanceof ExecutorService) || isTerminated(executor)) {
             return;
         }
         final ExecutorService es = (ExecutorService) executor;
@@ -87,14 +93,15 @@ public class ExecutorUtil {
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
         }
-        if (!isShutdown(es)) {
+        if (!isTerminated(es)) {
             newThreadToCloseExecutor(es);
         }
     }
 
     private static void newThreadToCloseExecutor(final ExecutorService es) {
-        if (!isShutdown(es)) {
+        if (!isTerminated(es)) {
             shutdownExecutor.execute(new Runnable() {
+                @Override
                 public void run() {
                     try {
                         for (int i = 0; i < 1000; i++) {
@@ -120,7 +127,7 @@ public class ExecutorUtil {
      */
     public static URL setThreadName(URL url, String defaultName) {
         String name = url.getParameter(Constants.THREAD_NAME_KEY, defaultName);
-        name = new StringBuilder(32).append(name).append("-").append(url.getAddress()).toString();
+        name = name + "-" + url.getAddress();
         url = url.addParameter(Constants.THREAD_NAME_KEY, name);
         return url;
     }

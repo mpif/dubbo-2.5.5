@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,9 +28,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * @author ding.lid
- */
 public class CompatibleTypeUtils {
 
     private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
@@ -38,8 +36,10 @@ public class CompatibleTypeUtils {
     }
 
     /**
-     * 兼容类型转换。null值是OK的。如果不需要转换，则返回原来的值。
-     * 进行的兼容类型转换如下：（基本类对应的Wrapper类型不再列出。）
+     * Compatible type convert. Null value is allowed to pass in. If no conversion is needed, then the original value
+     * will be returned.
+     * <p>
+     * Supported compatible type conversions include (primary types and corresponding wrappers are not listed):
      * <ul>
      * <li> String -> char, enum, Date
      * <li> byte, short, int, long -> byte, short, int, long
@@ -79,9 +79,18 @@ public class CompatibleTypeUtils {
                 return new Byte(string);
             } else if (type == Boolean.class || type == boolean.class) {
                 return new Boolean(string);
-            } else if (type == Date.class) {
+            } else if (type == Date.class || type == java.sql.Date.class || type == java.sql.Timestamp.class || type == java.sql.Time.class) {
                 try {
-                    return new SimpleDateFormat(DATE_FORMAT).parse((String) value);
+                    Date date = new SimpleDateFormat(DATE_FORMAT).parse((String) value);
+                    if (type == java.sql.Date.class) {
+                        return new java.sql.Date(date.getTime());
+                    } else if (type == java.sql.Timestamp.class) {
+                        return new java.sql.Timestamp(date.getTime());
+                    } else if (type == java.sql.Time.class) {
+                        return new java.sql.Time(date.getTime());
+                    } else {
+                        return date;
+                    }
                 } catch (ParseException e) {
                     throw new IllegalStateException("Failed to parse date " + value + " by format " + DATE_FORMAT + ", cause: " + e.getMessage(), e);
                 }
@@ -90,6 +99,19 @@ public class CompatibleTypeUtils {
                     return ReflectUtils.name2class((String) value);
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException(e.getMessage(), e);
+                }
+            } else if (char[].class.equals(type)) {
+                // Process string to char array for generic invoke
+                // See
+                // - https://github.com/apache/incubator-dubbo/issues/2003
+                if (string == null) {
+                    return null;
+                }
+                else {
+                    int len = string.length();
+                    char[] chars = new char[len];
+                    string.getChars(0, len, chars, 0);
+                    return chars;
                 }
             }
         } else if (value instanceof Number) {

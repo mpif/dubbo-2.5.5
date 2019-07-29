@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,24 +45,20 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * PojoUtils. Travel object deeply, and convert complex type to simple type.
- * <p>
+ * <p/>
  * Simple type below will be remained:
  * <ul>
  * <li> Primitive Type, also include <b>String</b>, <b>Number</b>(Integer, Long), <b>Date</b>
  * <li> Array of Primitive Type
  * <li> Collection, eg: List, Map, Set etc.
  * </ul>
- * <p>
+ * <p/>
  * Other type will be covert to a map which contains the attributes and value pair of object.
- *
- * @author william.liangf
- * @author ding.lid
  */
 public class PojoUtils {
 
     private static final ConcurrentMap<String, Method> NAME_METHODS_CACHE = new ConcurrentHashMap<String, Method>();
-    private static final ConcurrentMap<Class<?>, ConcurrentMap<String, Field>> CLASS_FIELD_CACHE =
-            new ConcurrentHashMap<Class<?>, ConcurrentMap<String, Field>>();
+    private static final ConcurrentMap<Class<?>, ConcurrentMap<String, Field>> CLASS_FIELD_CACHE = new ConcurrentHashMap<Class<?>, ConcurrentMap<String, Field>>();
 
     public static Object[] generalize(Object[] objs) {
         Object[] dests = new Object[objs.length];
@@ -82,8 +79,7 @@ public class PojoUtils {
     }
 
     public static Object[] realize(Object[] objs, Class<?>[] types, Type[] gtypes) {
-        if (objs.length != types.length
-                || objs.length != gtypes.length)
+        if (objs.length != types.length || objs.length != gtypes.length)
             throw new IllegalArgumentException("args.length != types.length");
         Object[] dests = new Object[objs.length];
         for (int i = 0; i < objs.length; i++) {
@@ -105,9 +101,7 @@ public class PojoUtils {
         if (pojo instanceof Enum<?>) {
             return ((Enum<?>) pojo).name();
         }
-        if (pojo.getClass().isArray()
-                && Enum.class.isAssignableFrom(
-                pojo.getClass().getComponentType())) {
+        if (pojo.getClass().isArray() && Enum.class.isAssignableFrom(pojo.getClass().getComponentType())) {
             int len = Array.getLength(pojo);
             String[] values = new String[len];
             for (int i = 0; i < len; i++) {
@@ -165,8 +159,7 @@ public class PojoUtils {
         for (Method method : pojo.getClass().getMethods()) {
             if (ReflectUtils.isBeanPropertyReadMethod(method)) {
                 try {
-                    map.put(ReflectUtils.getPropertyNameFromBeanReadMethod(method),
-                            generalize(method.invoke(pojo), history));
+                    map.put(ReflectUtils.getPropertyNameFromBeanReadMethod(method), generalize(method.invoke(pojo), history));
                 } catch (Exception e) {
                     throw new RuntimeException(e.getMessage(), e);
                 }
@@ -177,7 +170,6 @@ public class PojoUtils {
             if (ReflectUtils.isPublicInstanceField(field)) {
                 try {
                     Object fieldValue = field.get(pojo);
-                    // public filed同时也有get/set方法，如果get/set存取的不是前面那个 public field 该如何处理
                     if (history.containsKey(pojo)) {
                         Object pojoGenerilizedValue = history.get(pojo);
                         if (pojoGenerilizedValue instanceof Map
@@ -202,6 +194,36 @@ public class PojoUtils {
 
     public static Object realize(Object pojo, Class<?> type, Type genericType) {
         return realize0(pojo, type, genericType, new IdentityHashMap<Object, Object>());
+    }
+
+    private static class PojoInvocationHandler implements InvocationHandler {
+
+        private Map<Object, Object> map;
+
+        public PojoInvocationHandler(Map<Object, Object> map) {
+            this.map = map;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            if (method.getDeclaringClass() == Object.class) {
+                return method.invoke(map, args);
+            }
+            String methodName = method.getName();
+            Object value = null;
+            if (methodName.length() > 3 && methodName.startsWith("get")) {
+                value = map.get(methodName.substring(3, 4).toLowerCase() + methodName.substring(4));
+            } else if (methodName.length() > 2 && methodName.startsWith("is")) {
+                value = map.get(methodName.substring(2, 3).toLowerCase() + methodName.substring(3));
+            } else {
+                value = map.get(methodName.substring(0, 1).toLowerCase() + methodName.substring(1));
+            }
+            if (value instanceof Map<?, ?> && !Map.class.isAssignableFrom(method.getReturnType())) {
+                value = realize0((Map<String, Object>) value, method.getReturnType(), null, new IdentityHashMap<Object, Object>());
+            }
+            return value;
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -269,8 +291,7 @@ public class PojoUtils {
             return null;
         }
 
-        if (type != null && type.isEnum()
-                && pojo.getClass() == String.class) {
+        if (type != null && type.isEnum() && pojo.getClass() == String.class) {
             return Enum.valueOf((Class<Enum>) type, (String) pojo);
         }
 
@@ -356,12 +377,22 @@ public class PojoUtils {
                     // ignore
                 }
             }
+
+            // special logic for enum
+            if (type.isEnum()) {
+                Object name = ((Map<Object, Object>) pojo).get("name");
+                if (name != null) {
+                    return Enum.valueOf((Class<Enum>) type, name.toString());
+                }
+            }
             Map<Object, Object> map;
-            // 返回值类型不是方法签名类型的子集 并且 不是接口类型
-            if (!type.isInterface()
-                    && !type.isAssignableFrom(pojo.getClass())) {
+            // when return type is not the subclass of return type from the signature and not an interface
+            if (!type.isInterface() && !type.isAssignableFrom(pojo.getClass())) {
                 try {
                     map = (Map<Object, Object>) type.newInstance();
+                    Map<Object, Object> mapPojo = (Map<Object, Object>) pojo;
+                    map.putAll(mapPojo);
+                    map.remove("class");
                 } catch (Exception e) {
                     //ignore error
                     map = (Map<Object, Object>) pojo;
@@ -379,12 +410,16 @@ public class PojoUtils {
                     Class<?> keyClazz;
                     if (keyType instanceof Class) {
                         keyClazz = (Class<?>) keyType;
+                    } else if (keyType instanceof ParameterizedType) {
+                        keyClazz = (Class<?>) ((ParameterizedType) keyType).getRawType();
                     } else {
                         keyClazz = entry.getKey() == null ? null : entry.getKey().getClass();
                     }
                     Class<?> valueClazz;
                     if (valueType instanceof Class) {
                         valueClazz = (Class<?>) valueType;
+                    } else if (valueType instanceof ParameterizedType) {
+                        valueClazz = (Class<?>) ((ParameterizedType) valueType).getRawType();
                     } else {
                         valueClazz = entry.getValue() == null ? null : entry.getValue().getClass();
                     }
@@ -426,15 +461,7 @@ public class PojoUtils {
                                 try {
                                     field.set(dest, value);
                                 } catch (IllegalAccessException e) {
-                                    throw new RuntimeException(
-                                            new StringBuilder(32)
-                                                    .append("Failed to set filed ")
-                                                    .append(name)
-                                                    .append(" of pojo ")
-                                                    .append(dest.getClass().getName())
-                                                    .append(" : ")
-                                                    .append(e.getMessage()).toString(),
-                                            e);
+                                    throw new RuntimeException("Failed to set filed " + name + " of pojo " + dest.getClass().getName() + " : " + e.getMessage(), e);
                                 }
                             }
                         }
@@ -448,7 +475,7 @@ public class PojoUtils {
                             if (!filed.isAccessible()) {
                                 filed.setAccessible(true);
                             }
-                            filed.set(dest, (String) message);
+                            filed.set(dest, message);
                         } catch (Exception e) {
                         }
                     }
@@ -460,15 +487,15 @@ public class PojoUtils {
     }
 
     /**
-     * 获取范型的类型
+     * Get parameterized type
      *
-     * @param genericType
-     * @param index
-     * @return List<Person>  返回Person.class ,Map<String,Person> index=0 返回String.class index=1 返回Person.class
+     * @param genericType generic type
+     * @param index       index of the target parameterized type
+     * @return Return Person.class for List<Person>, return Person.class for Map<String, Person> when index=0
      */
     private static Type getGenericClassByIndex(Type genericType, int index) {
         Type clazz = null;
-        //范型参数转换
+        // find parameterized type
         if (genericType instanceof ParameterizedType) {
             ParameterizedType t = (ParameterizedType) genericType;
             Type[] types = t.getActualTypeArguments();
@@ -482,15 +509,14 @@ public class PojoUtils {
             return cls.newInstance();
         } catch (Throwable t) {
             try {
-                Constructor<?>[] constructors = cls.getConstructors();
+                Constructor<?>[] constructors = cls.getDeclaredConstructors();
                 if (constructors != null && constructors.length == 0) {
                     throw new RuntimeException("Illegal constructor: " + cls.getName());
                 }
                 Constructor<?> constructor = constructors[0];
                 if (constructor.getParameterTypes().length > 0) {
                     for (Constructor<?> c : constructors) {
-                        if (c.getParameterTypes().length <
-                                constructor.getParameterTypes().length) {
+                        if (c.getParameterTypes().length < constructor.getParameterTypes().length) {
                             constructor = c;
                             if (constructor.getParameterTypes().length == 0) {
                                 break;
@@ -498,6 +524,7 @@ public class PojoUtils {
                         }
                     }
                 }
+                constructor.setAccessible(true);
                 return constructor.newInstance(new Object[constructor.getParameterTypes().length]);
             } catch (InstantiationException e) {
                 throw new RuntimeException(e.getMessage(), e);
@@ -517,8 +544,7 @@ public class PojoUtils {
                 method = cls.getMethod(name, valueCls);
             } catch (NoSuchMethodException e) {
                 for (Method m : cls.getMethods()) {
-                    if (ReflectUtils.isBeanPropertyWriteMethod(m)
-                            && m.getName().equals(name)) {
+                    if (ReflectUtils.isBeanPropertyWriteMethod(m) && m.getName().equals(name)) {
                         method = m;
                     }
                 }
@@ -532,16 +558,15 @@ public class PojoUtils {
 
     private static Field getField(Class<?> cls, String fieldName) {
         Field result = null;
-        if (CLASS_FIELD_CACHE.containsKey(cls)
-                && CLASS_FIELD_CACHE.get(cls).containsKey(fieldName)) {
+        if (CLASS_FIELD_CACHE.containsKey(cls) && CLASS_FIELD_CACHE.get(cls).containsKey(fieldName)) {
             return CLASS_FIELD_CACHE.get(cls).get(fieldName);
         }
         try {
-            result = cls.getField(fieldName);
+            result = cls.getDeclaredField(fieldName);
+            result.setAccessible(true);
         } catch (NoSuchFieldException e) {
             for (Field field : cls.getFields()) {
-                if (fieldName.equals(field.getName())
-                        && ReflectUtils.isPublicInstanceField(field)) {
+                if (fieldName.equals(field.getName()) && ReflectUtils.isPublicInstanceField(field)) {
                     result = field;
                     break;
                 }
@@ -563,35 +588,6 @@ public class PojoUtils {
         return !ReflectUtils.isPrimitives(cls)
                 && !Collection.class.isAssignableFrom(cls)
                 && !Map.class.isAssignableFrom(cls);
-    }
-
-    private static class PojoInvocationHandler implements InvocationHandler {
-
-        private Map<Object, Object> map;
-
-        public PojoInvocationHandler(Map<Object, Object> map) {
-            this.map = map;
-        }
-
-        @SuppressWarnings("unchecked")
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            if (method.getDeclaringClass() == Object.class) {
-                return method.invoke(map, args);
-            }
-            String methodName = method.getName();
-            Object value = null;
-            if (methodName.length() > 3 && methodName.startsWith("get")) {
-                value = map.get(methodName.substring(3, 4).toLowerCase() + methodName.substring(4));
-            } else if (methodName.length() > 2 && methodName.startsWith("is")) {
-                value = map.get(methodName.substring(2, 3).toLowerCase() + methodName.substring(3));
-            } else {
-                value = map.get(methodName.substring(0, 1).toLowerCase() + methodName.substring(1));
-            }
-            if (value instanceof Map<?, ?> && !Map.class.isAssignableFrom(method.getReturnType())) {
-                value = realize0((Map<String, Object>) value, method.getReturnType(), null, new IdentityHashMap<Object, Object>());
-            }
-            return value;
-        }
     }
 
 }

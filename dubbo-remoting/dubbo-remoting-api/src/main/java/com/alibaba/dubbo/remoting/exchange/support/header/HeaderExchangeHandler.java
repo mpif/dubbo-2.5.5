@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,9 +37,6 @@ import java.net.InetSocketAddress;
 
 /**
  * ExchangeReceiver
- *
- * @author william.liangf
- * @author chao.liuc
  */
 public class HeaderExchangeHandler implements ChannelHandlerDelegate {
 
@@ -105,6 +103,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         return res;
     }
 
+    @Override
     public void connected(Channel channel) throws RemotingException {
         channel.setAttribute(KEY_READ_TIMESTAMP, System.currentTimeMillis());
         channel.setAttribute(KEY_WRITE_TIMESTAMP, System.currentTimeMillis());
@@ -116,6 +115,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         }
     }
 
+    @Override
     public void disconnected(Channel channel) throws RemotingException {
         channel.setAttribute(KEY_READ_TIMESTAMP, System.currentTimeMillis());
         channel.setAttribute(KEY_WRITE_TIMESTAMP, System.currentTimeMillis());
@@ -123,10 +123,12 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         try {
             handler.disconnected(exchangeChannel);
         } finally {
+            DefaultFuture.closeChannel(channel);
             HeaderExchangeChannel.removeChannelIfDisconnected(channel);
         }
     }
 
+    @Override
     public void sent(Channel channel, Object message) throws RemotingException {
         Throwable exception = null;
         try {
@@ -156,6 +158,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         }
     }
 
+    @Override
     public void received(Channel channel, Object message) throws RemotingException {
         channel.setAttribute(KEY_READ_TIMESTAMP, System.currentTimeMillis());
         ExchangeChannel exchangeChannel = HeaderExchangeChannel.getOrAddChannel(channel);
@@ -193,6 +196,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         }
     }
 
+    @Override
     public void caught(Channel channel, Throwable exception) throws RemotingException {
         if (exception instanceof ExecutionException) {
             ExecutionException e = (ExecutionException) exception;
@@ -216,6 +220,7 @@ public class HeaderExchangeHandler implements ChannelHandlerDelegate {
         }
     }
 
+    @Override
     public ChannelHandler getHandler() {
         if (handler instanceof ChannelHandlerDelegate) {
             return ((ChannelHandlerDelegate) handler).getHandler();

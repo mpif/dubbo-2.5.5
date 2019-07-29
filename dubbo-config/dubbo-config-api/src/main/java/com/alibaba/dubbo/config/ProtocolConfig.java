@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +21,6 @@ import com.alibaba.dubbo.common.serialize.Serialization;
 import com.alibaba.dubbo.common.status.StatusChecker;
 import com.alibaba.dubbo.common.threadpool.ThreadPool;
 import com.alibaba.dubbo.config.support.Parameter;
-import com.alibaba.dubbo.registry.support.AbstractRegistryFactory;
 import com.alibaba.dubbo.remoting.Codec;
 import com.alibaba.dubbo.remoting.Dispatcher;
 import com.alibaba.dubbo.remoting.Transporter;
@@ -29,103 +29,109 @@ import com.alibaba.dubbo.remoting.telnet.TelnetHandler;
 import com.alibaba.dubbo.rpc.Protocol;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * ProtocolConfig
  *
- * @author william.liangf
  * @export
  */
 public class ProtocolConfig extends AbstractConfig {
 
     private static final long serialVersionUID = 6913423882496634749L;
 
-    // 服务协议
+    // protocol name
     private String name;
 
-    // 服务IP地址(多网卡时使用)
+    // service IP address (when there are multiple network cards available)
     private String host;
 
-    // 服务端口
+    // service port
     private Integer port;
 
-    // 上下文路径
+    // context path
     private String contextpath;
 
-    // 线程池类型
+    // thread pool
     private String threadpool;
 
-    // 线程池大小(固定大小)
+    // thread pool size (fixed size)
     private Integer threads;
 
-    // IO线程池大小(固定大小)
+    // IO thread pool size (fixed size)
     private Integer iothreads;
 
-    // 线程池队列大小
+    // thread pool's queue length
     private Integer queues;
 
-    // 最大接收连接数
+    // max acceptable connections
     private Integer accepts;
 
-    // 协议编码
+    // protocol codec
     private String codec;
 
-    // 序列化方式
+    // serialization
     private String serialization;
 
-    // 字符集
+    // charset
     private String charset;
 
-    // 最大请求数据长度
+    // payload max length
     private Integer payload;
 
-    // 缓存区大小
+    // buffer size
     private Integer buffer;
 
-    // 心跳间隔
+    // heartbeat interval
     private Integer heartbeat;
 
-    // 访问日志
+    // access log
     private String accesslog;
 
-    // 网络传输方式
+    // transfort
     private String transporter;
 
-    // 信息交换方式
+    // how information is exchanged
     private String exchanger;
 
-    // 信息线程模型派发方式
+    // thread dispatch mode
     private String dispatcher;
 
-    // 对称网络组网方式
+    // networker
     private String networker;
 
-    // 服务器端实现
+    // sever impl
     private String server;
 
-    // 客户端实现
+    // client impl
     private String client;
 
-    // 支持的telnet命令，多个命令用逗号分隔
+    // supported telnet commands, separated with comma.
     private String telnet;
 
-    // 命令行提示符
+    // command line prompt
     private String prompt;
 
-    // status检查
+    // status check
     private String status;
 
-    // 是否注册
+    // whether to register
     private Boolean register;
 
-    // 参数
+    // parameters
+    // 是否长连接
+    // TODO add this to provider config
+    private Boolean keepAlive;
+
+    // TODO add this to provider config
+    private String optimizer;
+
+    private String extension;
+
+    // parameters
     private Map<String, String> parameters;
 
-    // 是否为缺省
+    // if it's default
     private Boolean isDefault;
-
-    private static final AtomicBoolean destroyed = new AtomicBoolean(false);
 
     public ProtocolConfig() {
     }
@@ -137,25 +143,6 @@ public class ProtocolConfig extends AbstractConfig {
     public ProtocolConfig(String name, int port) {
         setName(name);
         setPort(port);
-    }
-
-    // TODO: 2017/8/30 to move this method somewhere else
-    public static void destroyAll() {
-        if (!destroyed.compareAndSet(false, true)) {
-            return;
-        }
-        AbstractRegistryFactory.destroyAll();
-        ExtensionLoader<Protocol> loader = ExtensionLoader.getExtensionLoader(Protocol.class);
-        for (String protocolName : loader.getLoadedExtensions()) {
-            try {
-                Protocol protocol = loader.getLoadedExtension(protocolName);
-                if (protocol != null) {
-                    protocol.destroy();
-                }
-            } catch (Throwable t) {
-                logger.warn(t.getMessage(), t);
-            }
-        }
     }
 
     @Parameter(excluded = true)
@@ -390,7 +377,7 @@ public class ProtocolConfig extends AbstractConfig {
     }
 
     /**
-     * 单词拼写错误，请使用{@link #getDispatcher()}
+     * typo, switch to use {@link #getDispatcher()}
      *
      * @deprecated {@link #getDispatcher()}
      */
@@ -401,7 +388,7 @@ public class ProtocolConfig extends AbstractConfig {
     }
 
     /**
-     * 单词拼写错误，请使用{@link #setDispatcher(String)
+     * typo, switch to use {@link #getDispatcher()}
      *
      * @deprecated {@link #setDispatcher(String)}
      */
@@ -443,10 +430,42 @@ public class ProtocolConfig extends AbstractConfig {
         this.isDefault = isDefault;
     }
 
-    public void destory() {
+    public Boolean getKeepAlive() {
+        return keepAlive;
+    }
+
+    public void setKeepAlive(Boolean keepAlive) {
+        this.keepAlive = keepAlive;
+    }
+
+    public String getOptimizer() {
+        return optimizer;
+    }
+
+    public void setOptimizer(String optimizer) {
+        this.optimizer = optimizer;
+    }
+
+    public String getExtension() {
+        return extension;
+    }
+
+    public void setExtension(String extension) {
+        this.extension = extension;
+    }
+
+    public void destroy() {
         if (name != null) {
             ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(name).destroy();
         }
     }
 
+    /**
+     * Just for compatibility.
+     * It should be deleted in the next major version, say 2.7.x.
+     */
+    @Deprecated
+    public static void destroyAll() {
+        DubboShutdownHook.getDubboShutdownHook().destroyAll();
+    }
 }

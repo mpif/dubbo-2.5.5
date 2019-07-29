@@ -1,11 +1,12 @@
 /*
- * Copyright 1999-2012 Alibaba Group.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,9 +22,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * @author <a href="mailto:gang.lvg@taobao.com">kimi</a>
- */
 public final class JavaBeanDescriptor implements Serializable, Iterable<Map.Entry<Object, Object>> {
 
     public static final int TYPE_CLASS = 1;
@@ -69,9 +67,7 @@ public final class JavaBeanDescriptor implements Serializable, Iterable<Map.Entr
     public JavaBeanDescriptor(String className, int type) {
         notEmpty(className, "class name is empty");
         if (!isValidType(type)) {
-            throw new IllegalArgumentException(
-                    new StringBuilder(16).append("type [ ")
-                            .append(type).append(" ] is unsupported").toString());
+            throw new IllegalArgumentException("type [ " + type + " ] is unsupported");
         }
 
         this.className = className;
@@ -139,7 +135,7 @@ public final class JavaBeanDescriptor implements Serializable, Iterable<Map.Entr
 
     public String getEnumPropertyName() {
         if (isEnumType()) {
-            Object result = getProperty(ENUM_PROPERTY_NAME).toString();
+            Object result = getProperty(ENUM_PROPERTY_NAME);
             return result == null ? null : result.toString();
         }
         throw new IllegalStateException("The instance is not a enum wrapper");
@@ -186,6 +182,7 @@ public final class JavaBeanDescriptor implements Serializable, Iterable<Map.Entr
         return properties.containsKey(propertyName);
     }
 
+    @Override
     public Iterator<Map.Entry<Object, Object>> iterator() {
         return properties.entrySet().iterator();
     }

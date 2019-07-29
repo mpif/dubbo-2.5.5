@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,9 +46,6 @@ import java.util.concurrent.Executors;
 
 /**
  * NettyServer
- *
- * @author qian.lei
- * @author chao.liuc
  */
 public class NettyServer extends AbstractServer implements Server {
 
@@ -76,7 +74,9 @@ public class NettyServer extends AbstractServer implements Server {
         // https://issues.jboss.org/browse/NETTY-365
         // https://issues.jboss.org/browse/NETTY-379
         // final Timer timer = new HashedWheelTimer(new NamedThreadFactory("NettyIdleTimer", true));
+        bootstrap.setOption("child.tcpNoDelay", true);
         bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+            @Override
             public ChannelPipeline getPipeline() {
                 NettyCodecAdapter adapter = new NettyCodecAdapter(getCodec(), getUrl(), NettyServer.this);
                 ChannelPipeline pipeline = Channels.pipeline();
@@ -106,7 +106,7 @@ public class NettyServer extends AbstractServer implements Server {
         }
         try {
             Collection<com.alibaba.dubbo.remoting.Channel> channels = getChannels();
-            if (channels != null && channels.size() > 0) {
+            if (channels != null && !channels.isEmpty()) {
                 for (com.alibaba.dubbo.remoting.Channel channel : channels) {
                     try {
                         channel.close();
@@ -135,6 +135,7 @@ public class NettyServer extends AbstractServer implements Server {
         }
     }
 
+    @Override
     public Collection<Channel> getChannels() {
         Collection<Channel> chs = new HashSet<Channel>();
         for (Channel channel : this.channels.values()) {
@@ -147,10 +148,12 @@ public class NettyServer extends AbstractServer implements Server {
         return chs;
     }
 
+    @Override
     public Channel getChannel(InetSocketAddress remoteAddress) {
         return channels.get(NetUtils.toAddressString(remoteAddress));
     }
 
+    @Override
     public boolean isBound() {
         return channel.isBound();
     }

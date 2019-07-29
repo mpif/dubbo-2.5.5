@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,9 +25,6 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * @author chao.liuc
- */
 public class MockedChannel implements Channel {
     private boolean isClosed;
     private volatile boolean closing = false;
@@ -39,31 +37,38 @@ public class MockedChannel implements Channel {
     }
 
 
+    @Override
     public URL getUrl() {
         return url;
     }
 
+    @Override
     public ChannelHandler getChannelHandler() {
 
         return this.handler;
     }
 
+    @Override
     public InetSocketAddress getLocalAddress() {
 
         return null;
     }
 
+    @Override
     public void send(Object message) throws RemotingException {
     }
 
+    @Override
     public void send(Object message, boolean sent) throws RemotingException {
         this.send(message);
     }
 
+    @Override
     public void close() {
         isClosed = true;
     }
 
+    @Override
     public void close(int timeout) {
         this.close();
     }
@@ -73,30 +78,37 @@ public class MockedChannel implements Channel {
         closing = true;
     }
 
+    @Override
     public boolean isClosed() {
         return isClosed;
     }
 
+    @Override
     public InetSocketAddress getRemoteAddress() {
         return null;
     }
 
+    @Override
     public boolean isConnected() {
         return false;
     }
 
+    @Override
     public boolean hasAttribute(String key) {
         return map.containsKey(key);
     }
 
+    @Override
     public Object getAttribute(String key) {
         return map.get(key);
     }
 
+    @Override
     public void setAttribute(String key, Object value) {
         map.put(key, value);
     }
 
+    @Override
     public void removeAttribute(String key) {
         map.remove(key);
     }

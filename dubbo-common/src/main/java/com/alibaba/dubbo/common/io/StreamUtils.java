@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,11 +21,7 @@ import java.io.InputStream;
 
 /**
  * Stream utils.
- *
- * @author qian.lei
- * @author ding.lid
  */
-
 public class StreamUtils {
     private StreamUtils() {
     }
@@ -33,6 +30,7 @@ public class StreamUtils {
         return new InputStream() {
             private int mPosition = 0, mMark = 0, mLimit = Math.min(limit, is.available());
 
+            @Override
             public int read() throws IOException {
                 if (mPosition < mLimit) {
                     mPosition++;
@@ -41,6 +39,7 @@ public class StreamUtils {
                 return -1;
             }
 
+            @Override
             public int read(byte b[], int off, int len) throws IOException {
                 if (b == null)
                     throw new NullPointerException();
@@ -62,6 +61,7 @@ public class StreamUtils {
                 return len;
             }
 
+            @Override
             public long skip(long len) throws IOException {
                 if (mPosition + len > mLimit)
                     len = mLimit - mPosition;
@@ -74,24 +74,29 @@ public class StreamUtils {
                 return len;
             }
 
+            @Override
             public int available() {
                 return mLimit - mPosition;
             }
 
+            @Override
             public boolean markSupported() {
                 return is.markSupported();
             }
 
+            @Override
             public void mark(int readlimit) {
                 is.mark(readlimit);
                 mMark = mPosition;
             }
 
+            @Override
             public void reset() throws IOException {
                 is.reset();
                 mPosition = mMark;
             }
 
+            @Override
             public void close() throws IOException {
             }
         };

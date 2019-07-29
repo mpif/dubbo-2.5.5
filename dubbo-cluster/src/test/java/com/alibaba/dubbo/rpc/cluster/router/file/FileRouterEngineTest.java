@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,6 +16,7 @@
  */
 package com.alibaba.dubbo.rpc.cluster.router.file;
 
+import com.alibaba.dubbo.common.Constants;
 import com.alibaba.dubbo.common.URL;
 import com.alibaba.dubbo.common.extension.ExtensionLoader;
 import com.alibaba.dubbo.rpc.Invocation;
@@ -30,7 +32,6 @@ import com.alibaba.dubbo.rpc.cluster.directory.StaticDirectory;
 import com.alibaba.dubbo.rpc.cluster.support.AbstractClusterInvoker;
 
 import junit.framework.Assert;
-import org.easymock.EasyMock;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -40,15 +41,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * @author chao.liuc
- */
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+
 @SuppressWarnings("unchecked")
 public class FileRouterEngineTest {
     private static boolean isScriptUnsupported = new ScriptEngineManager().getEngineByName("javascript") == null;
     List<Invoker<FileRouterEngineTest>> invokers = new ArrayList<Invoker<FileRouterEngineTest>>();
-    Invoker<FileRouterEngineTest> invoker1 = EasyMock.createMock(Invoker.class);
-    Invoker<FileRouterEngineTest> invoker2 = EasyMock.createMock(Invoker.class);
+    Invoker<FileRouterEngineTest> invoker1 = mock(Invoker.class);
+    Invoker<FileRouterEngineTest> invoker2 = mock(Invoker.class);
     Invocation invocation;
     Directory<FileRouterEngineTest> dic;
     Result result = new RpcResult();
@@ -132,6 +133,7 @@ public class FileRouterEngineTest {
     private URL initUrl(String filename) {
         filename = getClass().getClassLoader().getResource(getClass().getPackage().getName().replace('.', '/') + "/" + filename).toString();
         URL url = URL.valueOf(filename);
+        url = url.addParameter(Constants.RUNTIME_KEY, true);
         return url;
     }
 
@@ -145,19 +147,15 @@ public class FileRouterEngineTest {
     }
 
     private void initInvokers(URL url, boolean invoker1Status, boolean invoker2Status) {
-        EasyMock.reset(invoker1);
-        EasyMock.expect(invoker1.invoke(invocation)).andReturn(result).anyTimes();
-        EasyMock.expect(invoker1.isAvailable()).andReturn(invoker1Status).anyTimes();
-        EasyMock.expect(invoker1.getUrl()).andReturn(url).anyTimes();
-        EasyMock.expect(invoker1.getInterface()).andReturn(FileRouterEngineTest.class).anyTimes();
-        EasyMock.replay(invoker1);
+        given(invoker1.invoke(invocation)).willReturn(result);
+        given(invoker1.isAvailable()).willReturn(invoker1Status);
+        given(invoker1.getUrl()).willReturn(url);
+        given(invoker1.getInterface()).willReturn(FileRouterEngineTest.class);
 
-        EasyMock.reset(invoker2);
-        EasyMock.expect(invoker2.invoke(invocation)).andReturn(result).anyTimes();
-        EasyMock.expect(invoker2.isAvailable()).andReturn(invoker2Status).anyTimes();
-        EasyMock.expect(invoker2.getUrl()).andReturn(url).anyTimes();
-        EasyMock.expect(invoker2.getInterface()).andReturn(FileRouterEngineTest.class).anyTimes();
-        EasyMock.replay(invoker2);
+        given(invoker2.invoke(invocation)).willReturn(result);
+        given(invoker2.isAvailable()).willReturn(invoker2Status);
+        given(invoker2.getUrl()).willReturn(url);
+        given(invoker2.getInterface()).willReturn(FileRouterEngineTest.class);
     }
 
     private void initDic(URL url) {

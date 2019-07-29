@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,7 +52,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <li>192.168.1.3:20880<br>
  * for this case, url protocol = null, url host = 192.168.1.3, port = 20880, url path = null
  * <li>file:///home/user1/router.js?type=script<br>
- * for this case, url protocol = null, url host = null, url path = home/user1/router.js
+ * for this case, url protocol = file, url host = null, url path = home/user1/router.js
  * <li>file://home/user1/router.js?type=script<br>
  * for this case, url protocol = file, url host = home, url path = user1/router.js
  * <li>file:///D:/1/router.js?type=script<br>
@@ -64,8 +65,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * for this case, url protocol = null, url host = home, url path = user1/router.js
  * </ul>
  *
- * @author william.liangf
- * @author ding.lid
  * @see java.net.URL
  * @see java.net.URI
  */
@@ -79,8 +78,10 @@ public final class URL implements Serializable {
 
     private final String password;
 
+    // by default, host to registry
     private final String host;
 
+    // by default, port to registry
     private final int port;
 
     private final String path;
@@ -117,7 +118,7 @@ public final class URL implements Serializable {
         this(protocol, null, null, host, port, null, (Map<String, String>) null);
     }
 
-    public URL(String protocol, String host, int port, String[] pairs) { // 变长参数...与下面的path参数冲突，改为数组
+    public URL(String protocol, String host, int port, String[] pairs) { // varargs ... confilict with the following path argument, use array instead.
         this(protocol, null, null, host, port, null, CollectionUtils.toStringMap(pairs));
     }
 
@@ -223,7 +224,7 @@ public final class URL implements Serializable {
             path = url.substring(i + 1);
             url = url.substring(0, i);
         }
-        i = url.indexOf("@");
+        i = url.lastIndexOf("@");
         if (i >= 0) {
             username = url.substring(0, i);
             int j = username.indexOf(":");
@@ -306,15 +307,12 @@ public final class URL implements Serializable {
     }
 
     /**
-     * 获取IP地址.
-     * <p>
-     * 请注意：
-     * 如果和Socket的地址对比，
-     * 或用地址作为Map的Key查找，
-     * 请使用IP而不是Host，
-     * 否则配置域名会有问题
+     * Fetch IP address for this URL.
      *
-     * @return ip
+     * Pls. note that IP should be used instead of Host when to compare with socket's address or to search in a map
+     * which use address as its key.
+     *
+     * @return ip in string format
      */
     public String getIp() {
         if (ip == null) {
@@ -445,14 +443,14 @@ public final class URL implements Serializable {
     }
 
     private Map<String, Number> getNumbers() {
-        if (numbers == null) { // 允许并发重复创建
+        if (numbers == null) { // concurrent initialization is tolerant
             numbers = new ConcurrentHashMap<String, Number>();
         }
         return numbers;
     }
 
     private Map<String, URL> getUrls() {
-        if (urls == null) { // 允许并发重复创建
+        if (urls == null) { // concurrent initialization is tolerant
             urls = new ConcurrentHashMap<String, URL>();
         }
         return urls;
@@ -929,7 +927,7 @@ public final class URL implements Serializable {
                 || value == null || value.length() == 0) {
             return this;
         }
-        // 如果没有修改，直接返回。
+        // if value doesn't change, return immediately
         if (value.equals(getParameters().get(key))) { // value != null
             return this;
         }
@@ -955,7 +953,7 @@ public final class URL implements Serializable {
     /**
      * Add parameters to a new url.
      *
-     * @param parameters
+     * @param parameters parameters in key-value pairs
      * @return A new URL
      */
     public URL addParameters(Map<String, String> parameters) {
@@ -966,12 +964,19 @@ public final class URL implements Serializable {
         boolean hasAndEqual = true;
         for (Map.Entry<String, String> entry : parameters.entrySet()) {
             String value = getParameters().get(entry.getKey());
-            if (value == null && entry.getValue() != null || !value.equals(entry.getValue())) {
-                hasAndEqual = false;
-                break;
+            if (value == null) {
+                if (entry.getValue() != null) {
+                    hasAndEqual = false;
+                    break;
+                }
+            } else {
+                if (!value.equals(entry.getValue())) {
+                    hasAndEqual = false;
+                    break;
+                }
             }
         }
-        // 如果没有修改，直接返回。
+        // return immediately if there's no change
         if (hasAndEqual) return this;
 
         Map<String, String> map = new HashMap<String, String>(getParameters());
@@ -1018,7 +1023,7 @@ public final class URL implements Serializable {
     }
 
     public URL removeParameters(Collection<String> keys) {
-        if (keys == null || keys.size() == 0) {
+        if (keys == null || keys.isEmpty()) {
             return this;
         }
         return removeParameters(keys.toArray(new String[0]));
@@ -1075,6 +1080,7 @@ public final class URL implements Serializable {
         return map;
     }
 
+    @Override
     public String toString() {
         if (string != null) {
             return string;

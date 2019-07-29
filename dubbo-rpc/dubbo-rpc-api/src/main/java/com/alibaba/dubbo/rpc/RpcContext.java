@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,6 +18,7 @@ package com.alibaba.dubbo.rpc;
 
 import com.alibaba.dubbo.common.Constants;
 import com.alibaba.dubbo.common.URL;
+import com.alibaba.dubbo.common.threadlocal.InternalThreadLocal;
 import com.alibaba.dubbo.common.utils.NetUtils;
 
 import java.net.InetSocketAddress;
@@ -35,22 +37,31 @@ import java.util.concurrent.TimeoutException;
 /**
  * Thread local context. (API, ThreadLocal, ThreadSafe)
  * <p>
- * 注意：RpcContext是一个临时状态记录器，当接收到RPC请求，或发起RPC请求时，RpcContext的状态都会变化。
- * 比如：A调B，B再调C，则B机器上，在B调C之前，RpcContext记录的是A调B的信息，在B调C之后，RpcContext记录的是B调C的信息。
+ * Note: RpcContext is a temporary state holder. States in RpcContext changes every time when request is sent or received.
+ * For example: A invokes B, then B invokes C. On service B, RpcContext saves invocation info from A to B before B
+ * starts invoking C, and saves invocation info from B to C after B invokes C.
  *
- * @author qian.lei
- * @author william.liangf
  * @export
  * @see com.alibaba.dubbo.rpc.filter.ContextFilter
  */
 public class RpcContext {
 
-    private static final ThreadLocal<RpcContext> LOCAL = new ThreadLocal<RpcContext>() {
+    /**
+     * use internal thread local to improve performance
+     */
+    private static final InternalThreadLocal<RpcContext> LOCAL = new InternalThreadLocal<RpcContext>() {
         @Override
         protected RpcContext initialValue() {
             return new RpcContext();
         }
     };
+    private static final InternalThreadLocal<RpcContext> SERVER_LOCAL = new InternalThreadLocal<RpcContext>() {
+        @Override
+        protected RpcContext initialValue() {
+            return new RpcContext();
+        }
+    };
+
     private final Map<String, String> attachments = new HashMap<String, String>();
     private final Map<String, Object> values = new HashMap<String, Object>();
     private Future<?> future;
@@ -75,7 +86,30 @@ public class RpcContext {
     @Deprecated
     private Invocation invocation;
 
+    // now we don't use the 'values' map to hold these objects
+    // we want these objects to be as generic as possible
+    private Object request;
+    private Object response;
+
     protected RpcContext() {
+    }
+
+    /**
+     * get server side context.
+     *
+     * @return server context
+     */
+    public static RpcContext getServerContext() {
+        return SERVER_LOCAL.get();
+    }
+
+    /**
+     * remove server side context.
+     *
+     * @see com.alibaba.dubbo.rpc.filter.ContextFilter
+     */
+    public static void removeServerContext() {
+        SERVER_LOCAL.remove();
     }
 
     /**
@@ -97,27 +131,59 @@ public class RpcContext {
     }
 
     /**
+     * Get the request object of the underlying RPC protocol, e.g. HttpServletRequest
+     *
+     * @return null if the underlying protocol doesn't provide support for getting request
+     */
+    public Object getRequest() {
+        return request;
+    }
+
+    /**
+     * Get the request object of the underlying RPC protocol, e.g. HttpServletRequest
+     *
+     * @return null if the underlying protocol doesn't provide support for getting request or the request is not of the specified type
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T getRequest(Class<T> clazz) {
+        return (request != null && clazz.isAssignableFrom(request.getClass())) ? (T) request : null;
+    }
+
+
+    public void setRequest(Object request) {
+        this.request = request;
+    }
+
+    /**
+     * Get the response object of the underlying RPC protocol, e.g. HttpServletResponse
+     *
+     * @return null if the underlying protocol doesn't provide support for getting response
+     */
+    public Object getResponse() {
+        return response;
+    }
+
+    /**
+     * Get the response object of the underlying RPC protocol, e.g. HttpServletResponse
+     *
+     * @return null if the underlying protocol doesn't provide support for getting response or the response is not of the specified type
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T getResponse(Class<T> clazz) {
+        return (response != null && clazz.isAssignableFrom(response.getClass())) ? (T) response : null;
+    }
+
+    public void setResponse(Object response) {
+        this.response = response;
+    }
+
+    /**
      * is provider side.
      *
      * @return provider side.
      */
     public boolean isProviderSide() {
-        URL url = getUrl();
-        if (url == null) {
-            return false;
-        }
-        InetSocketAddress address = getRemoteAddress();
-        if (address == null) {
-            return false;
-        }
-        String host;
-        if (address.getAddress() == null) {
-            host = address.getHostName();
-        } else {
-            host = address.getAddress().getHostAddress();
-        }
-        return url.getPort() != address.getPort() ||
-                !NetUtils.filterLocalHost(url.getIp()).equals(NetUtils.filterLocalHost(host));
+        return !isConsumerSide();
     }
 
     /**
@@ -126,22 +192,7 @@ public class RpcContext {
      * @return consumer side.
      */
     public boolean isConsumerSide() {
-        URL url = getUrl();
-        if (url == null) {
-            return false;
-        }
-        InetSocketAddress address = getRemoteAddress();
-        if (address == null) {
-            return false;
-        }
-        String host;
-        if (address.getAddress() == null) {
-            host = address.getHostName();
-        } else {
-            host = address.getAddress().getHostAddress();
-        }
-        return url.getPort() == address.getPort() &&
-                NetUtils.filterLocalHost(url.getIp()).equals(NetUtils.filterLocalHost(host));
+        return getUrl().getParameter(Constants.SIDE_KEY, Constants.PROVIDER_SIDE).equals(Constants.CONSUMER_SIDE);
     }
 
     /**
@@ -505,7 +556,7 @@ public class RpcContext {
 
     public RpcContext setInvokers(List<Invoker<?>> invokers) {
         this.invokers = invokers;
-        if (invokers != null && invokers.size() > 0) {
+        if (invokers != null && !invokers.isEmpty()) {
             List<URL> urls = new ArrayList<URL>(invokers.size());
             for (Invoker<?> invoker : invokers) {
                 urls.add(invoker.getUrl());
@@ -550,10 +601,10 @@ public class RpcContext {
     }
 
     /**
-     * 异步调用 ，需要返回值，即使步调用Future.get方法，也会处理调用超时问题.
+     * Async invocation. Timeout will be handled even if <code>Future.get()</code> is not called.
      *
      * @param callable
-     * @return 通过future.get()获取返回结果.
+     * @return get the return result from <code>future.get()</code>
      */
     @SuppressWarnings("unchecked")
     public <T> Future<T> asyncCall(Callable<T> callable) {
@@ -561,9 +612,10 @@ public class RpcContext {
             try {
                 setAttachment(Constants.ASYNC_KEY, Boolean.TRUE.toString());
                 final T o = callable.call();
-                //local调用会直接返回结果.
+                //local invoke will return directly
                 if (o != null) {
                     FutureTask<T> f = new FutureTask<T>(new Callable<T>() {
+                        @Override
                         public T call() throws Exception {
                             return o;
                         }
@@ -580,22 +632,27 @@ public class RpcContext {
             }
         } catch (final RpcException e) {
             return new Future<T>() {
+                @Override
                 public boolean cancel(boolean mayInterruptIfRunning) {
                     return false;
                 }
 
+                @Override
                 public boolean isCancelled() {
                     return false;
                 }
 
+                @Override
                 public boolean isDone() {
                     return true;
                 }
 
+                @Override
                 public T get() throws InterruptedException, ExecutionException {
                     throw new ExecutionException(e.getCause());
                 }
 
+                @Override
                 public T get(long timeout, TimeUnit unit)
                         throws InterruptedException, ExecutionException,
                         TimeoutException {
@@ -607,16 +664,16 @@ public class RpcContext {
     }
 
     /**
-     * oneway调用，只发送请求，不接收返回结果.
+     * one way async call, send request only, and result is not required
      *
-     * @param callable
+     * @param runnable
      */
-    public void asyncCall(Runnable runable) {
+    public void asyncCall(Runnable runnable) {
         try {
             setAttachment(Constants.RETURN_KEY, Boolean.FALSE.toString());
-            runable.run();
+            runnable.run();
         } catch (Throwable e) {
-            //FIXME 异常是否应该放在future中？
+            // FIXME should put exception in future?
             throw new RpcException("oneway call error ." + e.getMessage(), e);
         } finally {
             removeAttachment(Constants.RETURN_KEY);

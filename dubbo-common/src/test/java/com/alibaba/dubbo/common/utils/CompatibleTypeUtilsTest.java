@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -66,6 +67,26 @@ public class CompatibleTypeUtilsTest {
 
             result = CompatibleTypeUtils.compatibleTypeConvert("2011-12-11 12:24:12", Date.class);
             assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2011-12-11 12:24:12"), (Date) result);
+
+            result = CompatibleTypeUtils.compatibleTypeConvert("2011-12-11 12:24:12", java.sql.Date.class);
+            assertEquals(new SimpleDateFormat("yyyy-MM-dd").format((java.sql.Date) result), "2011-12-11");
+
+            result = CompatibleTypeUtils.compatibleTypeConvert("2011-12-11 12:24:12", java.sql.Time.class);
+            assertEquals(new SimpleDateFormat("HH:mm:ss").format((java.sql.Time) result), "12:24:12");
+
+            result = CompatibleTypeUtils.compatibleTypeConvert("2011-12-11 12:24:12", java.sql.Timestamp.class);
+            assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format((java.sql.Timestamp) result), "2011-12-11 12:24:12");
+
+            result = CompatibleTypeUtils.compatibleTypeConvert("ab", char[].class);
+            assertEquals(2, ((char[]) result).length);
+            assertEquals('a', ((char[]) result)[0]);
+            assertEquals('b', ((char[]) result)[1]);
+
+            result = CompatibleTypeUtils.compatibleTypeConvert("", char[].class);
+            assertEquals(0, ((char[]) result).length);
+
+            result = CompatibleTypeUtils.compatibleTypeConvert(null, char[].class);
+            assertEquals(null, result);
         }
 
         {

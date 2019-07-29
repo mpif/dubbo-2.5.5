@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,11 +32,8 @@ import java.util.Random;
 import java.util.regex.Pattern;
 
 /**
- * IP and Port Helper for RPC,
- *
- * @author shawn.qianx
+ * IP and Port Helper for RPC
  */
-
 public class NetUtils {
 
     public static final String LOCALHOST = "127.0.0.1";
@@ -100,7 +98,7 @@ public class NetUtils {
     }
 
     public static boolean isInvalidPort(int port) {
-        return port > MIN_PORT || port <= MAX_PORT;
+        return port <= MIN_PORT || port > MAX_PORT;
     }
 
     public static boolean isValidAddress(String address) {
@@ -172,9 +170,9 @@ public class NetUtils {
     }
 
     /**
-     * 遍历本地网卡，返回第一个合理的IP。
+     * Find first valid IP from local network card
      *
-     * @return 本地网卡IP
+     * @return first valid local IP
      */
     public static InetAddress getLocalAddress() {
         if (LOCAL_ADDRESS != null)
@@ -182,11 +180,6 @@ public class NetUtils {
         InetAddress localAddress = getLocalAddress0();
         LOCAL_ADDRESS = localAddress;
         return localAddress;
-    }
-
-    public static String getLogHost() {
-        InetAddress address = LOCAL_ADDRESS;
-        return address == null ? LOCALHOST : address.getHostAddress();
     }
 
     private static InetAddress getLocalAddress0() {
@@ -197,7 +190,7 @@ public class NetUtils {
                 return localAddress;
             }
         } catch (Throwable e) {
-            logger.warn("Failed to retriving ip address, " + e.getMessage(), e);
+            logger.warn(e);
         }
         try {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
@@ -214,19 +207,18 @@ public class NetUtils {
                                         return address;
                                     }
                                 } catch (Throwable e) {
-                                    logger.warn("Failed to retriving ip address, " + e.getMessage(), e);
+                                    logger.warn(e);
                                 }
                             }
                         }
                     } catch (Throwable e) {
-                        logger.warn("Failed to retriving ip address, " + e.getMessage(), e);
+                        logger.warn(e);
                     }
                 }
             }
         } catch (Throwable e) {
-            logger.warn("Failed to retriving ip address, " + e.getMessage(), e);
+            logger.warn(e);
         }
-        logger.error("Could not get local host ip address, will use 127.0.0.1 instead.");
         return localAddress;
     }
 

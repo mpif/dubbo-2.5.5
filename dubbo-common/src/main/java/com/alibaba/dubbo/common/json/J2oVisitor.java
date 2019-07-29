@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,10 +34,8 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * JSON to Object visitor.
- *
- * @author qian.lei.
  */
-
+@Deprecated
 class J2oVisitor implements JSONVisitor {
     public static final boolean[] EMPTY_BOOL_ARRAY = new boolean[0];
 
@@ -197,9 +196,11 @@ class J2oVisitor implements JSONVisitor {
         return sb.toString();
     }
 
+    @Override
     public void begin() {
     }
 
+    @Override
     public Object end(Object obj, boolean isValue) throws ParseException {
         mStack.clear();
         try {
@@ -209,6 +210,7 @@ class J2oVisitor implements JSONVisitor {
         }
     }
 
+    @Override
     public void objectBegin() throws ParseException {
         mStack.push(mValue);
         mStack.push(mType);
@@ -239,6 +241,7 @@ class J2oVisitor implements JSONVisitor {
         }
     }
 
+    @Override
     public Object objectEnd(int count) {
         Object ret = mValue;
         mWrapper = (Wrapper) mStack.pop();
@@ -247,11 +250,13 @@ class J2oVisitor implements JSONVisitor {
         return ret;
     }
 
+    @Override
     public void objectItem(String name) {
         mStack.push(name); // push name.
         mType = (mWrapper == null ? Object.class : mWrapper.getPropertyType(name));
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public void objectItemValue(Object obj, boolean isValue) throws ParseException {
         String name = (String) mStack.pop();  // pop name.
@@ -285,6 +290,7 @@ class J2oVisitor implements JSONVisitor {
         }
     }
 
+    @Override
     public void arrayBegin() throws ParseException {
         mStack.push(mType);
 
@@ -296,6 +302,7 @@ class J2oVisitor implements JSONVisitor {
             throw new ParseException("Convert error, can not load json array data into class [" + mType.getName() + "].");
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public Object arrayEnd(int count) throws ParseException {
         Object ret;
@@ -332,6 +339,7 @@ class J2oVisitor implements JSONVisitor {
         return ret;
     }
 
+    @Override
     public void arrayItem(int index) throws ParseException {
         if (mTypes != null && mStack.size() == index + 1) {
             if (index < mTypes.length)
@@ -341,6 +349,7 @@ class J2oVisitor implements JSONVisitor {
         }
     }
 
+    @Override
     public void arrayItemValue(int index, Object obj, boolean isValue) throws ParseException {
         if (isValue && obj != null) {
             try {

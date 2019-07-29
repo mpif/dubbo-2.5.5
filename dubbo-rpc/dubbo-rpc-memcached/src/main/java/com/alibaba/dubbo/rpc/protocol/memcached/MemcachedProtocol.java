@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2012 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,21 +40,22 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * MemcachedProtocol
- *
- * @author william.liangf
  */
 public class MemcachedProtocol extends AbstractProtocol {
 
     public static final int DEFAULT_PORT = 11211;
 
+    @Override
     public int getDefaultPort() {
         return DEFAULT_PORT;
     }
 
+    @Override
     public <T> Exporter<T> export(final Invoker<T> invoker) throws RpcException {
         throw new UnsupportedOperationException("Unsupported export memcached service. url: " + invoker.getUrl());
     }
 
+    @Override
     public <T> Invoker<T> refer(final Class<T> type, final URL url) throws RpcException {
         try {
             String address = url.getAddress();
@@ -68,6 +70,7 @@ public class MemcachedProtocol extends AbstractProtocol {
             final String set = url.getParameter("set", Map.class.equals(type) ? "put" : "set");
             final String delete = url.getParameter("delete", Map.class.equals(type) ? "remove" : "delete");
             return new AbstractInvoker<T>(type, url) {
+                @Override
                 protected Result doInvoke(Invocation invocation) throws Throwable {
                     try {
                         if (get.equals(invocation.getMethodName())) {
@@ -101,6 +104,7 @@ public class MemcachedProtocol extends AbstractProtocol {
                     }
                 }
 
+                @Override
                 public void destroy() {
                     super.destroy();
                     try {

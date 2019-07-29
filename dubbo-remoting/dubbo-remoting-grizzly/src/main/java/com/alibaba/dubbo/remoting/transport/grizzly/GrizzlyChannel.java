@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,7 +36,7 @@ import java.util.concurrent.TimeoutException;
 /**
  * GrizzlyChannel
  *
- * @author william.liangf
+ *
  */
 final class GrizzlyChannel extends AbstractChannel {
 
@@ -74,24 +75,28 @@ final class GrizzlyChannel extends AbstractChannel {
         return ret;
     }
 
-    static void removeChannelIfDisconnectd(Connection<?> connection) {
+    static void removeChannelIfDisconnected(Connection<?> connection) {
         if (connection != null && !connection.isOpen()) {
             ATTRIBUTE.remove(connection);
         }
     }
 
+    @Override
     public InetSocketAddress getRemoteAddress() {
         return (InetSocketAddress) connection.getPeerAddress();
     }
 
+    @Override
     public boolean isConnected() {
         return connection.isOpen();
     }
 
+    @Override
     public InetSocketAddress getLocalAddress() {
         return (InetSocketAddress) connection.getLocalAddress();
     }
 
+    @Override
     @SuppressWarnings("rawtypes")
     public void send(Object message, boolean sent) throws RemotingException {
         super.send(message, sent);
@@ -111,6 +116,7 @@ final class GrizzlyChannel extends AbstractChannel {
         }
     }
 
+    @Override
     public void close() {
         try {
             super.close();
@@ -118,7 +124,7 @@ final class GrizzlyChannel extends AbstractChannel {
             logger.warn(e.getMessage(), e);
         }
         try {
-            removeChannelIfDisconnectd(connection);
+            removeChannelIfDisconnected(connection);
         } catch (Exception e) {
             logger.warn(e.getMessage(), e);
         }
@@ -132,18 +138,22 @@ final class GrizzlyChannel extends AbstractChannel {
         }
     }
 
+    @Override
     public boolean hasAttribute(String key) {
         return getAttribute(key) == null;
     }
 
+    @Override
     public Object getAttribute(String key) {
         return Grizzly.DEFAULT_ATTRIBUTE_BUILDER.createAttribute(key).get(connection);
     }
 
+    @Override
     public void setAttribute(String key, Object value) {
         Grizzly.DEFAULT_ATTRIBUTE_BUILDER.createAttribute(key).set(connection, value);
     }
 
+    @Override
     public void removeAttribute(String key) {
         Grizzly.DEFAULT_ATTRIBUTE_BUILDER.createAttribute(key).remove(connection);
     }

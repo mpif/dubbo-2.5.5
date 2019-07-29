@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,7 +28,6 @@ import java.util.Map;
 /**
  * RPC Invocation.
  *
- * @author qian.lei
  * @serial Don't change the class name and properties.
  */
 public class RpcInvocation implements Invocation, Serializable {
@@ -104,6 +104,7 @@ public class RpcInvocation implements Invocation, Serializable {
         this.invoker = invoker;
     }
 
+    @Override
     public Invoker<?> getInvoker() {
         return invoker;
     }
@@ -112,6 +113,7 @@ public class RpcInvocation implements Invocation, Serializable {
         this.invoker = invoker;
     }
 
+    @Override
     public String getMethodName() {
         return methodName;
     }
@@ -120,6 +122,7 @@ public class RpcInvocation implements Invocation, Serializable {
         this.methodName = methodName;
     }
 
+    @Override
     public Class<?>[] getParameterTypes() {
         return parameterTypes;
     }
@@ -128,6 +131,7 @@ public class RpcInvocation implements Invocation, Serializable {
         this.parameterTypes = parameterTypes == null ? new Class<?>[0] : parameterTypes;
     }
 
+    @Override
     public Object[] getArguments() {
         return arguments;
     }
@@ -136,6 +140,7 @@ public class RpcInvocation implements Invocation, Serializable {
         this.arguments = arguments == null ? new Object[0] : arguments;
     }
 
+    @Override
     public Map<String, String> getAttachments() {
         return attachments;
     }
@@ -179,6 +184,7 @@ public class RpcInvocation implements Invocation, Serializable {
         }
     }
 
+    @Override
     public String getAttachment(String key) {
         if (attachments == null) {
             return null;
@@ -186,6 +192,7 @@ public class RpcInvocation implements Invocation, Serializable {
         return attachments.get(key);
     }
 
+    @Override
     public String getAttachment(String key, String defaultValue) {
         if (attachments == null) {
             return defaultValue;

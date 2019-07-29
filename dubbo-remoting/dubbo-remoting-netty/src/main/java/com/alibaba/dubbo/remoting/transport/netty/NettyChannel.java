@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,9 +33,6 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * NettyChannel.
- *
- * @author qian.lei
- * @author william.liangf
  */
 final class NettyChannel extends AbstractChannel {
 
@@ -77,18 +75,22 @@ final class NettyChannel extends AbstractChannel {
         }
     }
 
+    @Override
     public InetSocketAddress getLocalAddress() {
         return (InetSocketAddress) channel.getLocalAddress();
     }
 
+    @Override
     public InetSocketAddress getRemoteAddress() {
         return (InetSocketAddress) channel.getRemoteAddress();
     }
 
+    @Override
     public boolean isConnected() {
         return channel.isConnected();
     }
 
+    @Override
     public void send(Object message, boolean sent) throws RemotingException {
         super.send(message, sent);
 
@@ -114,6 +116,7 @@ final class NettyChannel extends AbstractChannel {
         }
     }
 
+    @Override
     public void close() {
         try {
             super.close();
@@ -140,14 +143,17 @@ final class NettyChannel extends AbstractChannel {
         }
     }
 
+    @Override
     public boolean hasAttribute(String key) {
         return attributes.containsKey(key);
     }
 
+    @Override
     public Object getAttribute(String key) {
         return attributes.get(key);
     }
 
+    @Override
     public void setAttribute(String key, Object value) {
         if (value == null) { // The null value unallowed in the ConcurrentHashMap.
             attributes.remove(key);
@@ -156,6 +162,7 @@ final class NettyChannel extends AbstractChannel {
         }
     }
 
+    @Override
     public void removeAttribute(String key) {
         attributes.remove(key);
     }

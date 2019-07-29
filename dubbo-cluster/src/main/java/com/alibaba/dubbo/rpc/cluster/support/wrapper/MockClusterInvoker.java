@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,9 +32,6 @@ import com.alibaba.dubbo.rpc.support.MockInvoker;
 
 import java.util.List;
 
-/**
- * @author chao.liuc
- */
 public class MockClusterInvoker<T> implements Invoker<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(MockClusterInvoker.class);
@@ -47,22 +45,27 @@ public class MockClusterInvoker<T> implements Invoker<T> {
         this.invoker = invoker;
     }
 
+    @Override
     public URL getUrl() {
         return directory.getUrl();
     }
 
+    @Override
     public boolean isAvailable() {
         return directory.isAvailable();
     }
 
+    @Override
     public void destroy() {
         this.invoker.destroy();
     }
 
+    @Override
     public Class<T> getInterface() {
         return directory.getInterface();
     }
 
+    @Override
     public Result invoke(Invocation invocation) throws RpcException {
         Result result = null;
 
@@ -85,7 +88,7 @@ public class MockClusterInvoker<T> implements Invoker<T> {
                     throw e;
                 } else {
                     if (logger.isWarnEnabled()) {
-                        logger.info("fail-mock: " + invocation.getMethodName() + " fail-mock enabled , url : " + directory.getUrl(), e);
+                        logger.warn("fail-mock: " + invocation.getMethodName() + " fail-mock enabled , url : " + directory.getUrl(), e);
                     }
                     result = doMockInvoke(invocation, e);
                 }
@@ -100,7 +103,7 @@ public class MockClusterInvoker<T> implements Invoker<T> {
         Invoker<T> minvoker;
 
         List<Invoker<T>> mockInvokers = selectMockInvoker(invocation);
-        if (mockInvokers == null || mockInvokers.size() == 0) {
+        if (mockInvokers == null || mockInvokers.isEmpty()) {
             minvoker = (Invoker<T>) new MockInvoker(directory.getUrl());
         } else {
             minvoker = mockInvokers.get(0);
@@ -113,7 +116,6 @@ public class MockClusterInvoker<T> implements Invoker<T> {
             } else {
                 throw new RpcException(me.getCode(), getMockExceptionMessage(e, me), me.getCause());
             }
-//			
         } catch (Throwable me) {
             throw new RpcException(getMockExceptionMessage(e, me), me.getCause());
         }
@@ -129,25 +131,32 @@ public class MockClusterInvoker<T> implements Invoker<T> {
     }
 
     /**
-     * 返回MockInvoker
-     * 契约：
-     * directory根据invocation中是否有Constants.INVOCATION_NEED_MOCK，来判断获取的是一个normal invoker 还是一个 mock invoker
-     * 如果directorylist 返回多个mock invoker，只使用第一个invoker.
+     * Return MockInvoker
+     * Contract：
+     * directory.list() will return a list of normal invokers if Constants.INVOCATION_NEED_MOCK is present in invocation, otherwise, a list of mock invokers will return.
+     * if directory.list() returns more than one mock invoker, only one of them will be used.
      *
      * @param invocation
      * @return
      */
     private List<Invoker<T>> selectMockInvoker(Invocation invocation) {
+        List<Invoker<T>> invokers = null;
         //TODO generic invoker？
         if (invocation instanceof RpcInvocation) {
-            //存在隐含契约(虽然在接口声明中增加描述，但扩展性会存在问题.同时放在attachement中的做法需要改进
+            //Note the implicit contract (although the description is added to the interface declaration, but extensibility is a problem. The practice placed in the attachement needs to be improved)
             ((RpcInvocation) invocation).setAttachment(Constants.INVOCATION_NEED_MOCK, Boolean.TRUE.toString());
-            //directory根据invocation中attachment是否有Constants.INVOCATION_NEED_MOCK，来判断获取的是normal invokers or mock invokers
-            List<Invoker<T>> invokers = directory.list(invocation);
-            return invokers;
-        } else {
-            return null;
+            //directory will return a list of normal invokers if Constants.INVOCATION_NEED_MOCK is present in invocation, otherwise, a list of mock invokers will return.
+            try {
+                invokers = directory.list(invocation);
+            } catch (RpcException e) {
+                if (logger.isInfoEnabled()) {
+                    logger.info("Exception when try to invoke mock. Get mock invokers error for service:"
+                            + directory.getUrl().getServiceInterface() + ", method:" + invocation.getMethodName()
+                            + ", will contruct a new mock with 'new MockInvoker()'.", e);
+                }
+            }
         }
+        return invokers;
     }
 
     @Override

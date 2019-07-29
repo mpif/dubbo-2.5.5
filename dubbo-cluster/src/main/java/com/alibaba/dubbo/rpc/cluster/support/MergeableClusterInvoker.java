@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,9 +46,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-/**
- * @author <a href="mailto:gang.lvg@alibaba-inc.com">kimi</a>
- */
 @SuppressWarnings("unchecked")
 public class MergeableClusterInvoker<T> implements Invoker<T> {
 
@@ -59,12 +57,13 @@ public class MergeableClusterInvoker<T> implements Invoker<T> {
         this.directory = directory;
     }
 
+    @Override
     @SuppressWarnings("rawtypes")
     public Result invoke(final Invocation invocation) throws RpcException {
         List<Invoker<T>> invokers = directory.list(invocation);
 
         String merger = getUrl().getMethodParameter(invocation.getMethodName(), Constants.MERGER_KEY);
-        if (ConfigUtils.isEmpty(merger)) { // 如果方法不需要Merge，退化为只调一个Group
+        if (ConfigUtils.isEmpty(merger)) { // If a method doesn't have a merger, only invoke one Group
             for (final Invoker<T> invoker : invokers) {
                 if (invoker.isAvailable()) {
                     return invoker.invoke(invocation);
@@ -84,6 +83,7 @@ public class MergeableClusterInvoker<T> implements Invoker<T> {
         Map<String, Future<Result>> results = new HashMap<String, Future<Result>>();
         for (final Invoker<T> invoker : invokers) {
             Future<Result> future = executor.submit(new Callable<Result>() {
+                @Override
                 public Result call() throws Exception {
                     return invoker.invoke(new RpcInvocation(invocation, invoker));
                 }
@@ -101,25 +101,18 @@ public class MergeableClusterInvoker<T> implements Invoker<T> {
             try {
                 Result r = future.get(timeout, TimeUnit.MILLISECONDS);
                 if (r.hasException()) {
-                    log.error(new StringBuilder(32).append("Invoke ")
-                                    .append(getGroupDescFromServiceKey(entry.getKey()))
-                                    .append(" failed: ")
-                                    .append(r.getException().getMessage()).toString(),
+                    log.error("Invoke " + getGroupDescFromServiceKey(entry.getKey()) + 
+                                    " failed: " + r.getException().getMessage(), 
                             r.getException());
                 } else {
                     resultList.add(r);
                 }
             } catch (Exception e) {
-                throw new RpcException(new StringBuilder(32)
-                        .append("Failed to invoke service ")
-                        .append(entry.getKey())
-                        .append(": ")
-                        .append(e.getMessage()).toString(),
-                        e);
+                throw new RpcException("Failed to invoke service " + entry.getKey() + ": " + e.getMessage(), e);
             }
         }
 
-        if (resultList.size() == 0) {
+        if (resultList.isEmpty()) {
             return new RpcResult((Object) null);
         } else if (resultList.size() == 1) {
             return resultList.iterator().next();
@@ -135,46 +128,26 @@ public class MergeableClusterInvoker<T> implements Invoker<T> {
             try {
                 method = returnType.getMethod(merger, returnType);
             } catch (NoSuchMethodException e) {
-                throw new RpcException(new StringBuilder(32)
-                        .append("Can not merge result because missing method [ ")
-                        .append(merger)
-                        .append(" ] in class [ ")
-                        .append(returnType.getClass().getName())
-                        .append(" ]")
-                        .toString());
+                throw new RpcException("Can not merge result because missing method [ " + merger + " ] in class [ " + 
+                        returnType.getClass().getName() + " ]");
             }
-            if (method != null) {
-                if (!Modifier.isPublic(method.getModifiers())) {
-                    method.setAccessible(true);
-                }
-                result = resultList.remove(0).getValue();
-                try {
-                    if (method.getReturnType() != void.class
-                            && method.getReturnType().isAssignableFrom(result.getClass())) {
-                        for (Result r : resultList) {
-                            result = method.invoke(result, r.getValue());
-                        }
-                    } else {
-                        for (Result r : resultList) {
-                            method.invoke(result, r.getValue());
-                        }
+            if (!Modifier.isPublic(method.getModifiers())) {
+                method.setAccessible(true);
+            }
+            result = resultList.remove(0).getValue();
+            try {
+                if (method.getReturnType() != void.class
+                        && method.getReturnType().isAssignableFrom(result.getClass())) {
+                    for (Result r : resultList) {
+                        result = method.invoke(result, r.getValue());
                     }
-                } catch (Exception e) {
-                    throw new RpcException(
-                            new StringBuilder(32)
-                                    .append("Can not merge result: ")
-                                    .append(e.getMessage()).toString(),
-                            e);
+                } else {
+                    for (Result r : resultList) {
+                        method.invoke(result, r.getValue());
+                    }
                 }
-            } else {
-                throw new RpcException(
-                        new StringBuilder(32)
-                                .append("Can not merge result because missing method [ ")
-                                .append(merger)
-                                .append(" ] in class [ ")
-                                .append(returnType.getClass().getName())
-                                .append(" ]")
-                                .toString());
+            } catch (Exception e) {
+                throw new RpcException("Can not merge result: " + e.getMessage(), e);
             }
         } else {
             Merger resultMerger;
@@ -197,18 +170,22 @@ public class MergeableClusterInvoker<T> implements Invoker<T> {
         return new RpcResult(result);
     }
 
+    @Override
     public Class<T> getInterface() {
         return directory.getInterface();
     }
 
+    @Override
     public URL getUrl() {
         return directory.getUrl();
     }
 
+    @Override
     public boolean isAvailable() {
         return directory.isAvailable();
     }
 
+    @Override
     public void destroy() {
         directory.destroy();
     }
@@ -216,8 +193,7 @@ public class MergeableClusterInvoker<T> implements Invoker<T> {
     private String getGroupDescFromServiceKey(String key) {
         int index = key.indexOf("/");
         if (index > 0) {
-            return new StringBuilder(32).append("group [ ")
-                    .append(key.substring(0, index)).append(" ]").toString();
+            return "group [ " + key.substring(0, index) + " ]";
         }
         return key;
     }

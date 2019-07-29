@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,9 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * AbstractInvoker.
- *
- * @author qian.lei
- * @author william.liangf
  */
 public abstract class AbstractInvoker<T> implements Invoker<T> {
 
@@ -88,14 +86,17 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         return attachment;
     }
 
+    @Override
     public Class<T> getInterface() {
         return type;
     }
 
+    @Override
     public URL getUrl() {
         return url;
     }
 
+    @Override
     public boolean isAvailable() {
         return available;
     }
@@ -104,6 +105,7 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         this.available = available;
     }
 
+    @Override
     public void destroy() {
         if (!destroyed.compareAndSet(false, true)) {
             return;
@@ -115,10 +117,12 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         return destroyed.get();
     }
 
+    @Override
     public String toString() {
         return getInterface() + " -> " + (getUrl() == null ? "" : getUrl().toString());
     }
 
+    @Override
     public Result invoke(Invocation inv) throws RpcException {
         if (destroyed.get()) {
             throw new RpcException("Rpc invoker for service " + this + " on consumer " + NetUtils.getLocalHost()
@@ -130,9 +134,15 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         if (attachment != null && attachment.size() > 0) {
             invocation.addAttachmentsIfAbsent(attachment);
         }
-        Map<String, String> context = RpcContext.getContext().getAttachments();
-        if (context != null) {
-            invocation.addAttachmentsIfAbsent(context);
+        Map<String, String> contextAttachments = RpcContext.getContext().getAttachments();
+        if (contextAttachments != null && contextAttachments.size() != 0) {
+            /**
+             * invocation.addAttachmentsIfAbsent(context){@link RpcInvocation#addAttachmentsIfAbsent(Map)}should not be used here,
+             * because the {@link RpcContext#setAttachment(String, String)} is passed in the Filter when the call is triggered
+             * by the built-in retry mechanism of the Dubbo. The attachment to update RpcContext will no longer work, which is
+             * a mistake in most cases (for example, through Filter to RpcContext output traceId and spanId and other information).
+             */
+            invocation.addAttachments(contextAttachments);
         }
         if (getUrl().getMethodParameter(invocation.getMethodName(), Constants.ASYNC_KEY, false)) {
             invocation.setAttachment(Constants.ASYNC_KEY, Boolean.TRUE.toString());

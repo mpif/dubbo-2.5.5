@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,8 +35,6 @@ import org.apache.mina.filter.codec.ProtocolEncoderOutput;
 
 /**
  * MinaCodecAdapter.
- *
- * @author qian.lei
  */
 final class MinaCodecAdapter implements ProtocolCodecFactory {
 
@@ -59,26 +58,30 @@ final class MinaCodecAdapter implements ProtocolCodecFactory {
         this.bufferSize = b >= Constants.MIN_BUFFER_SIZE && b <= Constants.MAX_BUFFER_SIZE ? b : Constants.DEFAULT_BUFFER_SIZE;
     }
 
+    @Override
     public ProtocolEncoder getEncoder() {
         return encoder;
     }
 
+    @Override
     public ProtocolDecoder getDecoder() {
         return decoder;
     }
 
     private class InternalEncoder implements ProtocolEncoder {
 
+        @Override
         public void dispose(IoSession session) throws Exception {
         }
 
+        @Override
         public void encode(IoSession session, Object msg, ProtocolEncoderOutput out) throws Exception {
             ChannelBuffer buffer = ChannelBuffers.dynamicBuffer(1024);
             MinaChannel channel = MinaChannel.getOrAddChannel(session, url, handler);
             try {
                 codec.encode(channel, buffer, msg);
             } finally {
-                MinaChannel.removeChannelIfDisconnectd(session);
+                MinaChannel.removeChannelIfDisconnected(session);
             }
             out.write(ByteBuffer.wrap(buffer.toByteBuffer()));
             out.flush();
@@ -89,6 +92,7 @@ final class MinaCodecAdapter implements ProtocolCodecFactory {
 
         private ChannelBuffer buffer = ChannelBuffers.EMPTY_BUFFER;
 
+        @Override
         public void decode(IoSession session, ByteBuffer in, ProtocolDecoderOutput out) throws Exception {
             int readable = in.limit();
             if (readable <= 0) return;
@@ -142,13 +146,15 @@ final class MinaCodecAdapter implements ProtocolCodecFactory {
                 } else {
                     buffer = ChannelBuffers.EMPTY_BUFFER;
                 }
-                MinaChannel.removeChannelIfDisconnectd(session);
+                MinaChannel.removeChannelIfDisconnected(session);
             }
         }
 
+        @Override
         public void dispose(IoSession session) throws Exception {
         }
 
+        @Override
         public void finishDecode(IoSession session, ProtocolDecoderOutput out) throws Exception {
         }
     }

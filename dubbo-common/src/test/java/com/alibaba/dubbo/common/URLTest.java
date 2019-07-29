@@ -1,12 +1,13 @@
 /*
- * Copyright 1999-2011 Alibaba Group.
- *  
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *  
- *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,10 +34,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * @author ding.lid
- * @author william.liangf
- */
 public class URLTest {
 
     @Test
@@ -247,7 +244,7 @@ public class URLTest {
         assertEquals("noValue", url.getParameter("noValue"));
     }
 
-    // TODO 不希望空格？ 详见： DUBBO-502 URL类对特殊字符处理统一约定
+    // TODO Do not want to use spaces? See: DUBBO-502, URL class handles special conventions for special characters.
     @Test
     public void test_valueOf_spaceSafe() throws Exception {
         URL url = URL.valueOf("http://1.2.3.4:8080/path?key=value1 value2");
@@ -261,7 +258,7 @@ public class URLTest {
 
         assertTrue(url.hasParameter("k0"));
 
-        // 没有Value的Key，生成的Value值使用Key值！！ -_-!!!
+        // If a Key has no corresponding Value, then the Key also used as the Value.
         assertEquals("k0", url.getParameter("k0"));
     }
 
@@ -633,4 +630,26 @@ public class URLTest {
         assertEquals("path", url.getPath());
     }
 
+    @Test
+    public void testAddParameters() throws Exception {
+        URL url = URL.valueOf("dubbo://127.0.0.1:20880");
+        Map<String, String> parameters = new HashMap<String, String>();
+        parameters.put("version", null);
+        url.addParameters(parameters);
+    }
+
+    @Test
+    public void testUserNamePasswordContainsAt(){
+        // Test username or password contains "@"
+        URL url = URL.valueOf("ad@min:hello@1234@10.20.130.230:20880/context/path?version=1.0.0&application=morgan");
+        assertNull(url.getProtocol());
+        assertEquals("ad@min", url.getUsername());
+        assertEquals("hello@1234", url.getPassword());
+        assertEquals("10.20.130.230", url.getHost());
+        assertEquals(20880, url.getPort());
+        assertEquals("context/path", url.getPath());
+        assertEquals(2, url.getParameters().size());
+        assertEquals("1.0.0", url.getParameter("version"));
+        assertEquals("morgan", url.getParameter("application"));
+    }
 }
